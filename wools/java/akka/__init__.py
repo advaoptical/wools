@@ -1,7 +1,7 @@
 from alpakka import register_wool
 
 
-WOOL = register_wool('akka', __name__, parent='java')
+WOOL = register_wool('Akka', __name__, parent='Java')
 
 PARENT_WRAPPERS = WOOL.PARENT_YANG_NODE_WRAPPERS
 
