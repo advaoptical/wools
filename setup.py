@@ -14,6 +14,10 @@ setup(
         'wools.java',
         'wools.java.akka',
     ],
+    entry_points={'alpakka_wools': [
+        'Java=wools.java',
+        'Akka=wools.java.akka',
+    ]},
 
     keywords=[
         'alpakka', 'pyang', 'yang', 'wrappers', 'wrapper', 'wools', 'wool',
