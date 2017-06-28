@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
@@ -9,11 +9,8 @@ setup(
 
     install_requires=['alpakka'],
 
-    packages=[
-        'wools',
-        'wools.java',
-        'wools.java.akka',
-    ],
+    packages=find_packages(include=['wools', 'wools.*']),
+
     entry_points={'alpakka_wools': [
         'Java=wools.java',
         'Akka=wools.java.akka',
