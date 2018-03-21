@@ -1,7 +1,8 @@
 import logging
 import re
 from alpakka import register_wool
-import alpakka.wrapper.nodewrapper as nw
+from alpakka.templates import template_var
+from alpakka.wrapper.nodewrapper import NodeWrapper
 from collections import OrderedDict
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -23,6 +24,12 @@ JAVA_LIST_IMPORTS = ('java.util', 'List')
 
 JAVA_LIST_CLASS_APPENDIX = 'ListType'
 
+# Java type used to instantiate lists
+JAVA_LIST_INSTANCE_IMPORTS = ('com.google.common.collect', 'ImmutableList')
+
+# list of reserved words in Java
+JAVA_RESERVED_WORDS = frozenset(["switch", "case"])
+
 PREFIX = ""
 
 JAVA_WRAPPER_CLASSES = {
@@ -32,8 +39,64 @@ JAVA_WRAPPER_CLASSES = {
 }
 
 
+def java_class_name(name):
+    """
+    Cleanup for names that need to follow Java class name restrictions.
+    Add any further processing here.
 
-class ImportDict():
+    :param name: the name to be cleaned up
+    :return: class name following Java convention
+
+    >>> java_class_name('some-type')
+    'SomeType'
+    """
+    return name.replace("-", " ").title().replace(" ", "")
+
+
+def to_camelcase(string):
+    """
+    Creates a camel case representation by removing hyphens.
+    The first letter is lower case everything else remains untouched.
+
+    :param string: string to be processed
+    :return: camel case representation of the string
+
+    >>> to_camelcase('Hello-world')
+    'helloWorld'
+    """
+    name = string[0].lower() + string[1:]
+    name = re.sub(r'[-](?P<first>[a-zA-Z])',
+                  lambda m: m.group('first').upper(),
+                  name)
+    # check if the name is a reserved word and prepend '_'
+    if name in JAVA_RESERVED_WORDS:
+        return '_' + name
+    else:
+        return name
+
+
+def to_package(string, prefix=None):
+    """
+    Converts the string to a package name by making it lower case,
+    replacing '-' with '.' and adding a prefix if available.
+
+    :param string: the string to be converted
+    :param prefix: the prefix for the package
+    :return: package name
+
+    >>> to_package('yang-module')
+    'yang.module'
+
+    >>> to_package('yang-module', 'fancy')
+    'fancy.yang.module'
+    """
+    package = string.lower().replace("-", ".")
+    if prefix:
+        package = '%s.%s' % (prefix, package)
+    return package
+
+
+class ImportDict:
     """
     Class that is used to store imports.
 
@@ -116,123 +179,183 @@ class JavaBaseType:
         self.is_base = True
 
 
-class JavaCase:
+class JavaNodeWrapper:
+
+    def __init__(self, *args):
+        super().__init__(*args)
+
+    @template_var
+    def package(self):
+        """
+        The pakackage name of this module.
+        :return: the package name
+        """
+        return to_package(self.yang_module(), NodeWrapper.prefix)
+
+    @template_var
+    def subpath(self):
+        """
+        The subpath of this module.
+        :return: the package name
+        """
+        if NodeWrapper.prefix:
+            return '%s/%s' % (NodeWrapper.prefix.replace(".", "/"),
+                              self.yang_module().lower().replace("-", "/"))
+        else:
+            return self.yang_module().lower().replace("-", "/")
+
+    @template_var
+    def collect_keys(self, only_parents=False):
+        """
+        Collects the list keys all the way up through the hierarchy.
+
+        :param only_parents: flag that decides if the own keys are skipped
+        :return: list of keys
+        """
+        result = self.parent and self.parent.collect_keys() or []
+        if not only_parents:
+            result += getattr(self, 'keys', ())
+        return result
+
+
+class JavaTyponder(JavaNodeWrapper):
 
     def __init__(self, statement, parent):
-        super().__init__(statement, parent)
-        self.java_imports = ImportDict()
-        self.java_type = java_class_name(self.statement.arg) + 'CaseType'
-        self.top().add_class(self.java_type, self)
-        self.java_imports.add_import(self.package(), self.java_type)
+        super(JavaTyponder, self).__init__(statement, parent)
+        if self.data_type:
+            if self.data_type == 'enumeration':
+                self.type = JavaEnumeration(statement.search_one('type'), self)
+            elif self.is_build_in_type:
+                self.type = JavaBaseType(self.data_type)
+            elif self.data_type == 'union':
+                self.type = JavaUnion(statement.search_one('type'), self)
+            elif self.data_type == 'leafref':
+                if self.reference:
+                    self.type = self.reference
+                else:
+                    self.type = 'leafref'
+            elif self.data_type == 'bits':
+                self.type = JavaBits(statement, self)
+            elif not self.is_build_in_type:
+                self.type = self.top().derived_types[self.data_type]
+            else:
+                logging.warning("Unmatched type: %s", self.data_type)
+
+    @template_var
+    def member_imports(self):
+        """
+        :return: Imports that are needed for this type if it is a member of a
+                 class.
+        """
+        return self.type.java_imports
 
 
-# class JavaTyponder:
-#
-#     def __init__(self):
-#         for stmt in self.statement.substmts:
-#             if stmt.keyword == 'type':
-#                 # is the statement an enumeration
-#                 if stmt.arg == 'enumeration':
-#                     self.type = Enumeration(stmt, self)
-#                 # is the statement a base type
-#                 elif self.is_build_in_type:
-#                     self.type = JavaBaseType(stmt, self)
-#                 # is the statement a union
-#                 elif stmt.arg == 'union':
-#                     self.type = Union(stmt, self)
-#                 # is the statement a lear reference
-#                 elif stmt.arg == 'leafref':
-#                     self.type = LeafRef(stmt, self)
-#                 elif stmt.arg == 'bits':
-#                     self.type = Bits(statement, self)
-#                 # does the statement contain a type definition
-#                 elif hasattr(stmt, 'i_typedef'):
-#                     self.type = JavaTypeDef(stmt.i_typedef, self)
-#                 else:
-#                     logging.warning("Unmatched type: %s", stmt.arg)
+class JavaGrouponder(JavaNodeWrapper):
 
-
-class JavaGrouponder:
-
-    def __init__(self, statement, parent):
-        super().__init__(statement,parent)
+    def __init__(self, *args):
+        super(JavaGrouponder, self).__init__(*args)
         # find all available variables in the sub-statements
         self.vars = OrderedDict()
-        for item in self.uses.values():
-            element = self.uses.pop(item.yang_name())
-            java_name = java_class_name(element.yang_name())
-            self.uses[java_name] = element
+        # for item in self.uses.values():
+        #     self.uses[java_class_name(item.yang_name())] = \
+        #         self.uses.pop(item.yang_name())
         for item in self.children.values():
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = to_camelcase(java_name)
             self.vars[java_name] = item
 
+    @template_var
+    def inherited_vars(self):
+        """
+        Collects a dictionary of inherited variables that are needed for
+        super calls.
+        :return: dictionary of inherited variables
+        """
+        result = OrderedDict()
+        for name, parent_group in self.uses.items():
+            # collect variables that are inherited by the parent
+            for inh_name, var in parent_group.inherited_vars().items():
+                result[inh_name] = var
+            # collect variables available in the parent class
+            for var_name, var in parent_group.vars.items():
+                result[var_name] = var
+        return result
 
-def java_class_name(name):
-    """
-    Cleanup for names that need to follow Java class name restrictions.
-    Add any further processing here.
-
-    :param name: the name to be cleaned up
-    :return: class name following Java convention
-
-    >>> java_class_name('some-type')
-    'SomeType'
-    """
-    return name.replace("-", " ").title().replace(" ", "")
-
-
-def to_camelcase(string):
-    """
-    Creates a camel case representation by removing hyphens.
-    The first letter is lower case everything else remains untouched.
-
-    :param string: string to be processed
-    :return: camel case representation of the string
-
-    >>> to_camelcase('Hello-world')
-    'helloWorld'
-    """
-    name = string[0].lower() + string[1:]
-    name = re.sub(r'[-](?P<first>[a-zA-Z])',
-                  lambda m: m.group('first').upper(),
-                  name)
-    # check if the name is a reserved word and prepend '_'
-    if name in JAVA_RESERVED_WORDS:
-        return '_' + name
-    else:
-        return name
-
-
-def to_package(string, prefix=None):
-    """
-    Converts the string to a package name by making it lower case,
-    replacing '-' with '.' and adding a prefix if available.
-
-    :param string: the string to be converted
-    :param prefix: the prefix for the package
-    :return: package name
-
-    >>> to_package('yang-module')
-    'yang.module'
-
-    >>> to_package('yang-module', 'fancy')
-    'fancy.yang.module'
-    """
-    package = string.lower().replace("-", ".")
-    if prefix:
-        package = '%s.%s' % (prefix, package)
-    return package
+    @template_var
+    def imports(self):
+        """
+        Collects all the imports that are needed for the grouping.
+        :return: set of imports
+        """
+        imports = ImportDict()
+        # imports from children
+        for child in self.children.values():
+            imports.merge(child.java_imports)
+        # imports from super classes
+        for inherit in self.uses.values():
+            imports.merge(inherit.inheritance_imports())
+        for var in self.vars.values():
+            # checking if there is at least one list defined in the grouponder
+            if hasattr(var, 'group') and var.group == 'list':
+                imports.add_import(JAVA_LIST_INSTANCE_IMPORTS[0],
+                                   JAVA_LIST_INSTANCE_IMPORTS[1])
+                break
+        return imports.get_imports()
 
 
-class JavaModule(PARENT['module']):
+class JavaModule(JavaNodeWrapper, PARENT['module']):
 
     def __init__(self, statement, parent=None):
         self.classes = OrderedDict()
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
         self.java_name = java_class_name(statement.i_prefix)
-        super().__init__(statement, parent=parent)
+        super(JavaModule, self).__init__(statement, parent)
+
+    @template_var
+    def enums(self):
+        """
+        Extracts the enumeration definitions from the typedefs.
+
+        :return: dictionary of enums
+        """
+        return {name: data for name, data in self.typedefs.items()
+                if data.type.group == 'enum'}
+
+    @template_var
+    def base_extensions(self):
+        """
+        Extracts extension of base types from the typedefs.
+
+        :return: dictionary of base type extensions
+        """
+        return {name: data for name, data in self.typedefs.items()
+                if data.type.group == 'base'}
+
+    @template_var
+    def types(self):
+        """
+        Extracts extension of defined types from the typedefs.
+
+        :return: dictionary of type extensions
+        """
+        return {name: data for name, data in self.typedefs.items()
+                if data.type.group == 'type'}
+
+    @template_var
+    def unions(self):
+        """
+        Extracts all unions from the typedefs.
+
+        :return:  dictionary of unions
+        """
+        return {name: data for name, data in self.typedefs.items()
+                if data.type.group == 'union'}
+
+    @template_var
+    def rpc_imports(self):
+        return {imp for _, data in getattr(self, 'rpcs', {}).items()
+                for imp in getattr(data, 'imports', ())}
 
     def add_class(self, class_name, wrapped_description):
         """
@@ -265,14 +388,6 @@ class JavaModule(PARENT['module']):
         else:
             self.classes[class_name] = wrapped_description
 
-    def del_class(self, class_name):
-        """
-        Deletes a class from the collection.
-
-        :param class_name: the class to be removed
-        """
-        self.classes.pop(class_name)
-
     def add_rpc(self, rpc_name, wrapped_description):
         """
         Add an RPC that needs to be generated.
@@ -298,15 +413,15 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
     def __init__(self, statement, parent):
         super(JavaContainer, self).__init__(statement, parent)
         self.java_imports = ImportDict()
-        if 'tapi' in self.top().yang_name() and self.parent == self.top():
+        if 'tapi' in self.top().yang_module() and self.parent == self.top():
             # fixing name collision in the ONF TAPI: context
-            self.java_type = java_class_name(statement.arg) + "Top"
+            self.java_type = java_class_name(self.yang_name()) + "Top"
             for name in self.uses.keys():
                 self.uses.pop(name)
-                self.top().del_class(name)
+                self.top().classes.pop(java_class_name(name))
             for ch_name, ch_wrapper in self.children.items():
                 # store the yang name
-                ch_wrapper.name = ch_wrapper.statement.arg
+                ch_wrapper.name = ch_wrapper.yang_name()
                 # remove leading underscores from the name
                 java_name = re.sub(r'^_', '', ch_wrapper.name)
                 java_name = to_camelcase(java_name)
@@ -324,15 +439,22 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
             if len(statement.i_children) > 0 and len(self.vars) == 0:
                 # adding variables to container class class
                 for child in self.children.values():
-                    if child.statement.keyword in [
+                    if child.yang_type() in [
                         'container', 'grouping', 'list', 'leaf-list',
                     ]:
-                        child.name = child.statement.arg
+                        child.name = child.yang_name()
                         java_name = to_camelcase(child.name)
                         self.vars[java_name] = child
-            self.java_type = java_class_name(statement.arg)
+            self.java_type = java_class_name(self.yang_name())
             self.top().add_class(self.java_type, self)
             self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
+
+    @template_var
+    def member_imports(self):
+        """
+        :return: imports needed if this class is a member
+        """
+        return self.java_imports
 
 
 class JavaList(JavaGrouponder, PARENT['list']):
@@ -351,7 +473,7 @@ class JavaList(JavaGrouponder, PARENT['list']):
             if len(self.uses) > 1:
                 for use in self.uses.values():
                     for child in use.children.values():
-                        java_name = to_camelcase(child.statement.arg)
+                        java_name = to_camelcase(child.yang_name())
                         self.vars[java_name] = child
             # only one super class -> assign type
             else:
@@ -368,7 +490,7 @@ class JavaList(JavaGrouponder, PARENT['list']):
         # if new variables are defined in the list, a helper class is needed
         # FIXME: the commented code (previous fixme) breaks this check
         if self.children and 0 < len(self.vars):
-            self.element_type = (java_class_name(statement.arg) +
+            self.element_type = (java_class_name(self.yang_name()) +
                                  JAVA_LIST_CLASS_APPENDIX)
             self.top().add_class(self.element_type, self)
             self.java_type = 'List<%s>' % self.element_type
@@ -386,23 +508,20 @@ class JavaList(JavaGrouponder, PARENT['list']):
                      for key in getattr(statement, 'i_key', ())]
 
 
-class JavaLeaf(PARENT['leaf']):
+class JavaLeaf(JavaTyponder, PARENT['leaf']):
 
     def __init__(self, statement, parent):
-        super().__init__(statement, parent)
-        self.java_type = self.data_type
+        super(JavaLeaf, self).__init__(statement, parent)
+        self.java_type = self.type.java_type
         self.java_imports = ImportDict()
-        if self.is_build_in_type:
-            self.java_type = JavaBaseType(self.data_type)
-        else:
-            self.java_type = self.top().typedefs[self.data_type]
-        self.java_imports.merge(self.java_type.java_imports)
+        self.java_imports.merge(self.type.java_imports)
+        self.children = OrderedDict()
 
 
-class JavaGrouping(PARENT['grouping'], JavaGrouponder):
+class JavaGrouping(JavaGrouponder, PARENT['grouping']):
 
     def __init__(self, statement, parent):
-        super(JavaGrouping, self).__init__(statement=statement, parent=parent)
+        super(JavaGrouping, self).__init__(statement, parent)
         self.java_type = java_class_name(self.yang_name())
         self.java_imports = ImportDict()
         self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
@@ -415,12 +534,32 @@ class JavaGrouping(PARENT['grouping'], JavaGrouponder):
                         var = JavaCase(case, self)
                         var.name = case.arg
                         self.vars[java_name] = var
+
+    @template_var
+    def type(self):
+        # FIXME: needs fixing for more than one uses
+        if not self.vars:
+            if len(self.uses) == 1:
+                return next(self.uses.keys())
+        else:
+            return None
+
+    @template_var
+    def inheritance_imports(self):
+        """
+        :return: Imports needed if inheriting from this class.
+        """
+        return self.java_imports
+
+    @template_var
+    def member_imports(self):
+        return self.java_imports
         
 
-class JavaTypeDef(PARENT['typedef']):
+class JavaTypeDef(JavaTyponder, PARENT['typedef']):
 
     def __init__(self, statement, parent):
-        super().__init__(statement, parent)
+        super(JavaTypeDef, self).__init__(statement, parent)
         self.group = 'type'
         self.java_imports = ImportDict()
         if self.data_type == 'leafref':
@@ -428,14 +567,14 @@ class JavaTypeDef(PARENT['typedef']):
             self.java_imports.merge(self.reference.java_imports)
         else:
             self.java_type = java_class_name(self.yang_name())
-            self.top().add_typedef(self.yang_name(), self)
+            self.top().add_typedef(self.java_type, self)
             self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
 
 
-class JavaLeafList(PARENT['leaf-list']):
+class JavaLeafList(JavaTyponder, PARENT['leaf-list']):
 
     def __init__(self, statement, parent):
-        super().__init__(statement,parent)
+        super(JavaLeafList, self).__init__(statement,parent)
         self.java_imports = ImportDict()
         self.java_imports.add_import(
             JAVA_LIST_IMPORTS[0], JAVA_LIST_IMPORTS[1])
@@ -447,3 +586,123 @@ class JavaLeafList(PARENT['leaf-list']):
             # else we use a generic list
         else:
             self.java_type = 'List'
+
+
+class JavaBits(NodeWrapper):
+    """
+    Wrapper class for bits statement
+    """
+
+    def __init__(self, statement, parent):
+        super().__init__(statement, parent)
+        self.java_imports = ImportDict()
+        self.java_type = java_class_name(self.yang_name())
+        self.java_imports.add_import(
+            to_package(self.top().yang_name(), PREFIX), self.java_type)
+        self.bits = OrderedDict()
+        self.group = 'bits'
+        for stmt in statement.search('bit'):
+            self.bits[stmt.arg] = JavaBit(stmt, self)
+
+
+class JavaBit(NodeWrapper):
+    """
+    Wrapper class for bit values.
+    """
+
+    def __init__(self, statement, parent):
+        super().__init__(statement, parent)
+        javaname = self.yang_name()
+        javaname = javaname.replace('-', '_').replace('.', '_')
+        self.javaname = javaname
+
+
+class JavaEnum(JavaNodeWrapper, PARENT['enum']):
+    """
+    Wrapper class for enum values.
+    """
+
+    def __init__(self, statement, parent):
+        super(JavaEnum, self).__init__(statement, parent)
+        # add an underscore in case the name starts with a number
+        javaname = re.sub(r'^(\d)', r'_\1', self.yang_name().upper())
+        javaname = javaname.replace('-', '_').replace('.', '_')
+        if javaname != self.yang_name():
+            self.javaname = javaname
+
+
+class JavaEnumeration(JavaNodeWrapper, PARENT['enumeration']):
+    """
+    Wrapper class for enumeration statements.
+    """
+
+    def __init__(self, statement, parent):
+        super(JavaEnumeration, self).__init__(statement, parent)
+        self.java_imports = ImportDict()
+        self.java_type = java_class_name(self.yang_name())
+        self.java_imports.add_import(
+            to_package(self.top().yang_name(), PREFIX), java_class_name(self.parent.yang_name()))
+        self.enums = OrderedDict()
+        self.group = 'enum'
+        # loop through substatements and extract the enum values
+        # for item in self.parent.enumeration.enums.values():
+        #   self.enums[item.yang_name()] = JavaEnum(item.statement, self)
+        # for stmt in statement.search('enum'):
+        #     self.enums[stmt.arg] = JavaEnum(stmt, self)
+
+    @template_var
+    def has_javanames(self):
+        """
+        Checks if at least one enum name was modified.
+        :return: did enum names change
+        """
+        return any(hasattr(data, 'javaname') for _, data in self.enums.items())
+
+
+class JavaUnion(JavaNodeWrapper, PARENT['union']):
+    """
+    Wrapper class for union statements
+    """
+
+    def __init__(self, statement, parent):
+        super().__init__(statement, parent)
+        self.group = 'union'
+        self.type = None
+        # list of types that belong to the union
+        self.java_imports = ImportDict()
+
+
+class JavaChoice(JavaGrouponder, PARENT['choice']):
+
+    def __init__(self, statement, parent):
+        super(JavaChoice, self).__init__(statement, parent)
+
+
+class JavaCase(JavaGrouponder, PARENT['case']):
+
+    def __init__(self, statement, parent):
+        super(JavaCase, self).__init__(statement, parent)
+        self.java_imports = ImportDict()
+        self.java_type = java_class_name(self.yang_name()) + 'CaseType'
+        self.top().add_class(self.java_type, self)
+        self.java_imports.add_import(self.package(), self.java_type)
+
+
+class JavaRPC(JavaGrouponder, PARENT['rpc']):
+
+    def __init__(self, statement, parent):
+        super(JavaRPC, self).__init__(statement,parent)
+        self.java_name = to_camelcase(self.yang_name())
+        self.top().add_rpc(self.java_name, self)
+
+
+class JavaInput(JavaGrouponder, PARENT['input']):
+
+    def __init__(self, statement, parent):
+        super(JavaInput, self).__init__(statement, parent)
+
+
+class JavaOutput(JavaGrouponder, PARENT['output']):
+
+    def __init__(self, statement, parent):
+        super(JavaOutput, self).__init__(statement, parent)
