@@ -30,8 +30,6 @@ JAVA_LIST_INSTANCE_IMPORTS = ('com.google.common.collect', 'ImmutableList')
 # list of reserved words in Java
 JAVA_RESERVED_WORDS = frozenset(["switch", "case"])
 
-PREFIX = ""
-
 JAVA_WRAPPER_CLASSES = {
     "int": "Integer",
     "boolean": "Boolean",
@@ -190,7 +188,7 @@ class JavaNodeWrapper:
         The pakackage name of this module.
         :return: the package name
         """
-        return to_package(self.yang_module(), NodeWrapper.prefix)
+        return to_package(self.yang_module(), WOOL.prefix)
 
     @template_var
     def subpath(self):
@@ -198,8 +196,8 @@ class JavaNodeWrapper:
         The subpath of this module.
         :return: the package name
         """
-        if NodeWrapper.prefix:
-            return '%s/%s' % (NodeWrapper.prefix.replace(".", "/"),
+        if WOOL.prefix:
+            return '%s/%s' % (WOOL.prefix.replace(".", "/"),
                               self.yang_module().lower().replace("-", "/"))
         else:
             return self.yang_module().lower().replace("-", "/")
@@ -225,8 +223,6 @@ class JavaTyponder(JavaNodeWrapper):
         if self.data_type:
             if self.data_type == 'enumeration':
                 self.type = JavaEnumeration(statement.search_one('type'), self)
-            elif self.is_build_in_type:
-                self.type = JavaBaseType(self.data_type)
             elif self.data_type == 'union':
                 self.type = JavaUnion(statement.search_one('type'), self)
             elif self.data_type == 'leafref':
@@ -236,6 +232,8 @@ class JavaTyponder(JavaNodeWrapper):
                     self.type = 'leafref'
             elif self.data_type == 'bits':
                 self.type = JavaBits(statement, self)
+            elif self.is_build_in_type:
+                self.type = JavaBaseType(self.data_type)
             elif not self.is_build_in_type:
                 self.type = self.top().derived_types[self.data_type]
             else:
@@ -256,9 +254,9 @@ class JavaGrouponder(JavaNodeWrapper):
         super(JavaGrouponder, self).__init__(*args)
         # find all available variables in the sub-statements
         self.vars = OrderedDict()
-        # for item in self.uses.values():
-        #     self.uses[java_class_name(item.yang_name())] = \
-        #         self.uses.pop(item.yang_name())
+        for item in list(self.uses.values()):
+            self.uses[java_class_name(item.yang_name())] = \
+                self.uses.pop(item.yang_name())
         for item in self.children.values():
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = to_camelcase(java_name)
@@ -309,6 +307,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.classes = OrderedDict()
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
+        self.prefix = WOOL.prefix
         self.java_name = java_class_name(statement.i_prefix)
         super(JavaModule, self).__init__(statement, parent)
 
@@ -356,6 +355,12 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
     def rpc_imports(self):
         return {imp for _, data in getattr(self, 'rpcs', {}).items()
                 for imp in getattr(data, 'imports', ())}
+
+    @template_var
+    def group_id(self):
+        result = to_camelcase(self.yang_name())
+        result = result[0].upper() + result[1:]
+        return result
 
     def add_class(self, class_name, wrapped_description):
         """
@@ -427,7 +432,7 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
                 java_name = to_camelcase(java_name)
                 self.vars[java_name] = ch_wrapper
                 self.top().add_class(self.java_type, self)
-                self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
+                self.java_imports.add_import(self.package(), self.java_type)
             # containers that just import a grouping don't need a new class
             # -> variable
         elif len(self.uses) == 1 and len(self.vars) == 0:
@@ -447,7 +452,7 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
                         self.vars[java_name] = child
             self.java_type = java_class_name(self.yang_name())
             self.top().add_class(self.java_type, self)
-            self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
+            self.java_imports.add_import(self.package(), self.java_type)
 
     @template_var
     def member_imports(self):
@@ -494,7 +499,7 @@ class JavaList(JavaGrouponder, PARENT['list']):
                                  JAVA_LIST_CLASS_APPENDIX)
             self.top().add_class(self.element_type, self)
             self.java_type = 'List<%s>' % self.element_type
-            self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.element_type)
+            self.java_imports.add_import(self.package(), self.element_type)
         else:
             # if a type is defined use it
             if hasattr(self, 'type') and hasattr(self.type, 'java_type'):
@@ -524,7 +529,7 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
         super(JavaGrouping, self).__init__(statement, parent)
         self.java_type = java_class_name(self.yang_name())
         self.java_imports = ImportDict()
-        self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
+        self.java_imports.add_import(self.package(), self.java_type)
         self.top().add_class(java_class_name(self.yang_name()), self)
         for sub_st in statement.substmts:
             if sub_st.keyword == 'choice':
@@ -568,7 +573,7 @@ class JavaTypeDef(JavaTyponder, PARENT['typedef']):
         else:
             self.java_type = java_class_name(self.yang_name())
             self.top().add_typedef(self.java_type, self)
-            self.java_imports.add_import(to_package(self.top().yang_name(), PREFIX), self.java_type)
+            self.java_imports.add_import(self.package(), self.java_type)
 
 
 class JavaLeafList(JavaTyponder, PARENT['leaf-list']):
@@ -597,8 +602,7 @@ class JavaBits(NodeWrapper):
         super().__init__(statement, parent)
         self.java_imports = ImportDict()
         self.java_type = java_class_name(self.yang_name())
-        self.java_imports.add_import(
-            to_package(self.top().yang_name(), PREFIX), self.java_type)
+        self.java_imports.add_import(self.package(), self.java_type)
         self.bits = OrderedDict()
         self.group = 'bits'
         for stmt in statement.search('bit'):
@@ -641,7 +645,7 @@ class JavaEnumeration(JavaNodeWrapper, PARENT['enumeration']):
         self.java_imports = ImportDict()
         self.java_type = java_class_name(self.yang_name())
         self.java_imports.add_import(
-            to_package(self.top().yang_name(), PREFIX), java_class_name(self.parent.yang_name()))
+            self.package(), java_class_name(self.parent.yang_name()))
         self.enums = OrderedDict()
         self.group = 'enum'
         # loop through substatements and extract the enum values
