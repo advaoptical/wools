@@ -1,9 +1,11 @@
 import logging
 import re
+import os
 from alpakka import register_wool
 from alpakka.templates import template_var
 from alpakka.wrapper.nodewrapper import NodeWrapper
 from collections import OrderedDict
+from jinja2 import Environment, PackageLoader
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -34,6 +36,13 @@ JAVA_WRAPPER_CLASSES = {
     "int": "Integer",
     "boolean": "Boolean",
     "double": "Double"
+}
+
+JAVA_FORBIDDEN_ROOTS = ('rpc')
+
+default_values = {
+    'int': 0,
+    'boolean': 'false'
 }
 
 
@@ -92,6 +101,56 @@ def to_package(string, prefix=None):
     if prefix:
         package = '%s.%s' % (prefix, package)
     return package
+
+
+def firstupper(value):
+    """
+    Makes the first letter of the value upper case without touching
+    the rest of the string.
+    In case the value starts with an '_' it is removed and the following letter
+    is made upper case.
+
+    :param value: the string to be processed
+    :return: the value with a upper case first letter
+
+    >>> firstupper('helloworld')
+    'Helloworld'
+    >>> firstupper('_HelloWorld')
+    'HelloWorld'
+    """
+    value = value.lstrip('_')
+    return value and value[0].upper() + value[1:]
+
+
+def firstlower(value):
+    """
+    Makes the first letter of the value lower case without touching
+    the rest of the string.
+
+    :param value: the string to be processed
+    :return: the value with a lower case first letter
+
+    >>> firstlower('HelloWorld')
+    'helloWorld'
+    """
+    return value and value[0].lower() + value[1:]
+
+
+def java_default(value):
+    """
+    Maps the java type to the corresponding default value.
+
+    :param value: the java type string
+    :return: the default value
+
+    >>> java_default('int')
+    0
+    >>> java_default('boolean')
+    'false'
+    >>> java_default('Object')
+    'null'
+    """
+    return default_values.get(value, 'null')
 
 
 class ImportDict:
@@ -215,6 +274,12 @@ class JavaNodeWrapper:
             result += getattr(self, 'keys', ())
         return result
 
+    def collect_children(self, caller):
+
+        for item in self.uses.values():
+            item.collect_children(caller)
+        caller.children.update(self.children)
+
 
 class JavaTyponder(JavaNodeWrapper):
 
@@ -254,13 +319,15 @@ class JavaGrouponder(JavaNodeWrapper):
         super(JavaGrouponder, self).__init__(*args)
         # find all available variables in the sub-statements
         self.vars = OrderedDict()
-        for item in list(self.uses.values()):
-            self.uses[java_class_name(item.yang_name())] = \
-                self.uses.pop(item.yang_name())
         for item in self.children.values():
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = to_camelcase(java_name)
             self.vars[java_name] = item
+        if hasattr(self, 'children'):
+            self.collect_children(self)
+        for item in list(self.uses.values()):
+            self.uses[java_class_name(item.yang_name())] = \
+                self.uses.pop(item.yang_name())
 
     @template_var
     def inherited_vars(self):
@@ -309,6 +376,20 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.typedefs = OrderedDict()
         self.prefix = WOOL.prefix
         self.java_name = java_class_name(statement.i_prefix)
+
+        self.output_path = self.WOOL.output_path
+        # variables for output generation
+        path = '/templates'
+        item = self.WOOL
+        while item.name != 'default':
+            path = '/' + item.name[0].lower() + item.name[1:] + path
+            item = item.parent
+        self.env = Environment(loader=PackageLoader('wools', path))
+        # add filters to environment
+        self.env.filters['firstupper'] = firstupper
+        self.env.filters['firstlower'] = firstlower
+        self.env.filters['javadefault'] = java_default
+
         super(JavaModule, self).__init__(statement, parent)
 
     @template_var
@@ -362,6 +443,14 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         result = result[0].upper() + result[1:]
         return result
 
+    @template_var
+    def get_root_elements(self):
+        result = dict()
+        for name, child in self.children.items():
+            if child.yang_type() not in JAVA_FORBIDDEN_ROOTS:
+                result[name] = child
+        return result
+
     def add_class(self, class_name, wrapped_description):
         """
         Add a class to the collection that needs to be generated.
@@ -411,6 +500,96 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         """
         # TODO: might need additional processing
         self.typedefs[typedef_name] = wrapped_description
+
+    def generate_classes(self):
+        """
+        organizes and orchestrate the class file generation
+
+        :return:
+        """
+        # generate enum classes
+        self.fill_template('enum_type.jinja', self.enums())
+        # generate class extensions
+        self.fill_template('class_extension.jinja', self.types())
+        # generate base class extensions
+        self.fill_template('class_type.jinja', self.base_extensions())
+        # generate classes
+        self.fill_template('grouping.jinja', self.classes)
+        # generate unions
+        self.fill_template('union.jinja', self.unions())
+        if not WOOL.beans_only:
+            # generate empty xml_config template for NETCONF use
+            # self.fill_template('empty_config.jinja',
+            #                    {'empty_XML_config': module})
+            # run only if rpcs are available
+            # if module.rpcs:
+            if_name = '%sInterface' % self.java_name
+            rpc_imports = {imp for rpc in self.rpcs.values()
+                           if hasattr(rpc, 'imports')
+                           for imp in rpc.imports()}
+            for children in self.get_root_elements().values():
+                for child in children.children.values():
+                    if hasattr(child, 'keys'):
+                        if self.yang_module().replace('-', '.') not in \
+                                child.java_imports.imports:
+                            rpc_imports.update(child.java_imports.get_imports())
+
+            rpc_dict = {'rpcs': self.rpcs,
+                        'imports': rpc_imports,
+                        'package': self.package(),
+                        'path': self.subpath(),
+                        'module': self}
+            self.fill_template('backend_interface.jinja',
+                               {if_name: rpc_dict})
+            rpc_dict['interface_name'] = if_name
+            self.fill_template('backend_impl.jinja',
+                               {'%sBackend' % self.java_name: rpc_dict})
+            self.fill_template('routes.jinja',
+                               {'%sRoutes' % self.java_name: rpc_dict})
+        self.generate_pom('pom.jinja', self)
+
+    def fill_template(self, template_name, description_dict):
+        """
+        Fills the template with the descriptions given in the dictionary.
+        :param template_name: the template to be used
+        :param description_dict: the dictionary with descriptions
+        """
+        template = self.env.get_template(template_name)
+        for key, context in description_dict.items():
+            if hasattr(context, 'subpath'):
+                subpath = context.subpath()
+            else:
+                subpath = context['path']
+            # get the output path for the file
+            output_path = "%s/%s/%s" % (self.output_path, 'src', subpath)
+            # create folder if not available
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+            # render the template
+            output = template.render(ctx=context, name=key)
+            # print the output for debugging
+            logging.debug(output)
+            # write to file
+            with open("%s/%s.java" % (output_path, key), 'w', encoding="utf-8",
+                      newline="\n") as f:
+                f.write(output)
+
+    def generate_pom(self, template_name, description_dict):
+
+        template = self.env.get_template(template_name)
+        # get the output path for the file
+        output_path = "%s" % (self.output_path)
+        # create folder if not available
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        # render the template
+        output = template.render(ctx=description_dict, name='')
+        # print the output for debugging
+        logging.debug(output)
+        # write to file
+        with open("%s/%s.xml" % (output_path, 'pom'), 'w', encoding="utf-8",
+                  newline="\n") as f:
+            f.write(output)
 
 
 class JavaContainer(JavaGrouponder, PARENT['container']):
@@ -584,6 +763,7 @@ class JavaLeafList(JavaTyponder, PARENT['leaf-list']):
         self.java_imports.add_import(
             JAVA_LIST_IMPORTS[0], JAVA_LIST_IMPORTS[1])
         self.group = 'list'
+        self.children = OrderedDict()
         if hasattr(self, 'type') and hasattr(self.type, 'java_type'):
             self.java_type = 'List<%s>' % self.type.java_type
             # in case of leafrefs this attribute is available
@@ -692,12 +872,14 @@ class JavaCase(JavaGrouponder, PARENT['case']):
         self.java_imports.add_import(self.package(), self.java_type)
 
 
-class JavaRPC(JavaGrouponder, PARENT['rpc']):
+class JavaRPC(JavaNodeWrapper, PARENT['rpc']):
 
     def __init__(self, statement, parent):
         super(JavaRPC, self).__init__(statement,parent)
         self.java_name = to_camelcase(self.yang_name())
         self.top().add_rpc(self.java_name, self)
+        self.children['input'] = self.input
+        self.children['output'] = self.output
 
 
 class JavaInput(JavaGrouponder, PARENT['input']):
