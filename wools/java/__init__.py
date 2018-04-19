@@ -600,9 +600,9 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
         if 'tapi' in self.top().yang_module() and self.parent == self.top():
             # fixing name collision in the ONF TAPI: context
             self.java_type = java_class_name(self.yang_name()) + "Top"
-            for name in self.uses.keys():
+            for name in set(self.uses.keys()):
                 self.uses.pop(name)
-                self.top().classes.pop(java_class_name(name))
+                self.top().classes.pop(name)
             for ch_name, ch_wrapper in self.children.items():
                 # store the yang name
                 ch_wrapper.name = ch_wrapper.yang_name()
