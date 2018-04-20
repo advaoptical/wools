@@ -737,7 +737,7 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
     @template_var
     def member_imports(self):
         return self.java_imports
-        
+
 
 class JavaTypeDef(JavaTyponder, PARENT['typedef']):
 
@@ -757,7 +757,7 @@ class JavaTypeDef(JavaTyponder, PARENT['typedef']):
 class JavaLeafList(JavaTyponder, PARENT['leaf-list']):
 
     def __init__(self, statement, parent):
-        super(JavaLeafList, self).__init__(statement,parent)
+        super(JavaLeafList, self).__init__(statement, parent)
         self.java_imports = ImportDict()
         self.java_imports.add_import(
             JAVA_LIST_IMPORTS[0], JAVA_LIST_IMPORTS[1])
@@ -825,13 +825,7 @@ class JavaEnumeration(JavaNodeWrapper, PARENT['enumeration']):
         self.java_type = java_class_name(self.yang_name())
         self.java_imports.add_import(
             self.package(), java_class_name(self.parent.yang_name()))
-        self.enums = OrderedDict()
         self.group = 'enum'
-        # loop through substatements and extract the enum values
-        # for item in self.parent.enumeration.enums.values():
-        #   self.enums[item.yang_name()] = JavaEnum(item.statement, self)
-        # for stmt in statement.search('enum'):
-        #     self.enums[stmt.arg] = JavaEnum(stmt, self)
 
     @template_var
     def has_javanames(self):
@@ -874,7 +868,7 @@ class JavaCase(JavaGrouponder, PARENT['case']):
 class JavaRPC(JavaNodeWrapper, PARENT['rpc']):
 
     def __init__(self, statement, parent):
-        super(JavaRPC, self).__init__(statement,parent)
+        super(JavaRPC, self).__init__(statement, parent)
         self.java_name = to_camelcase(self.yang_name())
         self.top().add_rpc(self.java_name, self)
         self.children['input'] = self.input
