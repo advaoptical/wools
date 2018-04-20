@@ -10,8 +10,10 @@ public {{ return_type }} {{ interface_method('get', name, child) }}({{ key_param
 
 package {{ ctx.package }};
 
+{% if ctx.rpcs -%}
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.server.Directives;
+{%- endif %}
 {% for import in ctx.imports %}
 import {{ import }};
 {% endfor %}
@@ -37,7 +39,7 @@ public class {{ name }} implements {{ ctx.interface_name }}{
 {% endfor %}
 {%- for name, child in ctx.module.get_root_elements().items() recursive -%}
   {%- if loop.depth == 1 %}{{ default_method(name, child, child.java_type, True) | indent(2) }}{%- endif -%}
-  {%- if child.keys -%} {{ default_method(name, child, child.java_type) | indent(2) }} {%- endif -%}
+  {%- if child.keys -%} {{ default_method(name, child, child.element_type) | indent(2) }} {%- endif -%}
 {{ loop(child.children.items()) }}
 {%- endfor %}
 }

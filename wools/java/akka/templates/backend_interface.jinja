@@ -18,7 +18,7 @@ public interface {{ name }} {
   {{child.java_type}} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', True) }});
 {%- endif %}
 {%- if child.keys %}
-  {{ child.java_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String') }});
+  {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String') }});
 {%- endif -%}
   {{- loop(child.children.items()) }}
 {%- endfor %}

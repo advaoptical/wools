@@ -527,8 +527,8 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
             rpc_imports = {imp for rpc in self.rpcs.values()
                            if hasattr(rpc, 'imports')
                            for imp in rpc.imports()}
-            for children in self.get_root_elements().values():
-                for child in children.children.values():
+            for root in self.get_root_elements().values():
+                for child in root.children.values():
                     if hasattr(child, 'keys'):
                         if self.yang_module().replace('-', '.') not in \
                                 child.java_imports.imports:
