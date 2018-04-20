@@ -688,8 +688,7 @@ class JavaList(JavaGrouponder, PARENT['list']):
             else:
                 self.java_type = 'List'
         # collect list of keys
-        self.keys = [to_camelcase(key.arg)
-                     for key in getattr(statement, 'i_key', ())]
+        self.keys = [to_camelcase(key) for key in self.keys]
 
 
 class JavaLeaf(JavaTyponder, PARENT['leaf']):
