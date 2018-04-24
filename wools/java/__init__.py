@@ -323,6 +323,11 @@ class JavaGrouponder(JavaNodeWrapper):
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = to_camelcase(java_name)
             self.vars[java_name] = item
+        for uses in self.uses.values():
+            for name in uses.children.keys():
+                java_name = re.sub(r'^_', '', name)
+                java_name = to_camelcase(java_name)
+                self.vars.pop(java_name)
         for item in list(self.uses.values()):
             self.uses[java_class_name(item.yang_name())] = \
                 self.uses.pop(item.yang_name())
