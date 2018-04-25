@@ -137,7 +137,7 @@ public class {{ name }} extends AllDirectives {
    */
   public Route get{{ mod.java_name }}Route() {
   return get(()-> route(
-  {%- for name, child in mod.children.items() recursive %}
+  {%- for name, child in mod.get_root_elements().items() recursive %}
   {%- set is_list = 'list' == child.group and child.keys %}
   {%- if child.children -%}
   {%- if is_list -%}
