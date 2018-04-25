@@ -247,7 +247,7 @@ class JavaNodeWrapper:
         The pakackage name of this module.
         :return: the package name
         """
-        return to_package(self.yang_module(), WOOL.prefix)
+        return to_package(self.yang_module(), self.WOOL.prefix)
 
     @template_var
     def subpath(self):
@@ -255,8 +255,8 @@ class JavaNodeWrapper:
         The subpath of this module.
         :return: the package name
         """
-        if WOOL.prefix:
-            return '%s/%s' % (WOOL.prefix.replace(".", "/"),
+        if self.WOOL.prefix:
+            return '%s/%s' % (self.WOOL.prefix.replace(".", "/"),
                               self.yang_module().lower().replace("-", "/"))
         else:
             return self.yang_module().lower().replace("-", "/")
@@ -377,7 +377,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.classes = OrderedDict()
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
-        self.prefix = WOOL.prefix
+        self.prefix = self.WOOL.prefix
         self.java_name = java_class_name(statement.i_prefix)
 
         self.output_path = self.WOOL.output_path
