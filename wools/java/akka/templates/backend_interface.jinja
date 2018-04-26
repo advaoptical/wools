@@ -10,17 +10,20 @@ import {{ import }};
 public interface {{ name }} {
 {% for key, rpc in ctx.rpcs.items() %}
   Route {{ key }}(
-    {%- if rpc.input %}{% for name, input in rpc.input.vars.items() -%}
+    {%- if rpc.input -%}{%- for name, input in rpc.input.vars.items() -%}
     {{ input.java_type }} {{ name }}{% if not loop.last %}, {% endif %}
-    {%- endfor %}{% endif -%}
+    {%- endfor -%}{%- endif -%}
     );
-{% endfor %}
-{%- for name, child in ctx.module.get_root_elements().items() recursive %}
-{%- if loop.depth == 1 %}
+{%- endfor %}
+{% for name, child in ctx.module.get_root_elements().items() recursive %}
+{%- if loop.depth <= 2 %}
   {{child.java_type}} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', True) }});
 {%- endif %}
-{%- if child.keys %}
+{%- if loop.depth <= 2 and child.keys %}
   {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String') }});
+{%- endif -%}
+{%- if loop.depth == 2 and child.children %}
+  {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', add_path=True) }});
 {%- endif -%}
   {{- loop(child.children.items()) }}
 {%- endfor %}
