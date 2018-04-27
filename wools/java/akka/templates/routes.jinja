@@ -1,4 +1,7 @@
 {%- from 'fub.jinja' import  interface_method, key_parameters -%}
+{%- macro backend_supplier(name, child, par_only=False) -%}
+() -> backend.{{ interface_method('get', name, child) }}( {{- key_parameters(child, parents_only=par_only) -}} )
+{%- endmacro -%}
 
 {{ ctx.module.top().get_copy_right() }}
 package {{ ctx.package }};
@@ -69,7 +72,7 @@ public class {{ name }} extends AllDirectives {
    * @return the route
    */
   private <T> Route jsonMarshallOK(Supplier<T> value) {
-    return pathEnd(() -> completeOK(value.get(), Jackson.marshaller()));
+    return pathEndOrSingleSlash(() -> completeOK(value.get(), Jackson.marshaller()));
   }
 
   /**
@@ -141,17 +144,21 @@ public class {{ name }} extends AllDirectives {
   return get(()-> route(
   {%- for name, child in mod.get_root_elements().items() recursive %}
   {%- set is_list = 'list' == child.group and child.keys %}
-  {%- if child.children -%}
-  {%- if is_list -%}
-    listRoute("{{ name }}", {{ child.keys[0] }}
-  {%- else -%}
-    pathPrefix("{{ name }}", ()
-  {%- endif -%}
-  -> route(jsonMarshallOK(() -> backend.{{ interface_method('get', name, child) }}( {{- key_parameters(child) -}} )),
-  {#%- endif -%#}
-  {%- if child.children -%} {{- loop(child.children.items()) }}{%- endif -%}
-  {%- if child.children -%} getValue(() -> backend.{{ interface_method('get', name, child) }}( {{- key_parameters(child) -}} ))) {%- endif -%} )
-  {%- if not (loop.depth == 1 and loop.last) -%} , {%- endif -%}
+  {%- if loop.depth <= 2 -%}
+    pathPrefix("{{ name }}", () -> {% if child.children -%}
+      route(jsonMarshallOK( {{- backend_supplier(name, child, True) -}} ),
+      {%- if is_list -%}
+        extractKey({{ child.keys[0] }} -> route( jsonMarshallOK( {{- backend_supplier(name, child) -}} ),
+      {%- endif -%}
+      {{- loop(child.children.items()) }}
+      {%- if loop.depth == 2 -%}
+        extractUnmatchedPath( remainingPath -> jsonMarshallOK(() -> backend.{{ interface_method('get', name, child) -}}
+        ( {{- key_parameters(child, path_name='remainingPath') -}} ))){%- endif -%}
+      {%- if is_list -%})){%- endif -%} ))
+      {%- if not (loop.depth == 1 and loop.last) -%} , {%- endif -%}
+    {%- else -%}
+     jsonMarshallOK( {{- backend_supplier(name, child, True) -}} ))
+    {%- endif -%}
   {%- endif -%}
   {%- endfor -%} )
   );

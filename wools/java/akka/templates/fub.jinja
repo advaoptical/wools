@@ -16,8 +16,8 @@
 {{ prefix }}{{ parent_prefix(node.parent) }}{{ name | replace('-', '') | firstupper }}
 {%- endmacro -%}
 
-{%- macro key_parameters(node, type=None, only_parent=False, add_path=False) -%}
-{%- for key in node.collect_keys(only_parent) -%}
-{% if type %}{{ type }} {% endif %}{{ key }}{% if not loop.last or add_path %}, {% endif %}{% if add_path %}String remainingPath{% endif %}
+{%- macro key_parameters(node, type=None, parents_only=False, path_name=None) -%}
+{%- for key in node.collect_keys(parents_only) -%}
+{% if type %}{{ type }} {% endif %}{{ key }}{% if not loop.last or path_name %}, {% endif %}{% if path_name %}{% if type %}String {% endif %}{{ path_name }}{% endif %}
 {%- endfor -%}
 {%- endmacro -%}

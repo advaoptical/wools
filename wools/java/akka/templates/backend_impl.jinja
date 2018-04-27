@@ -1,9 +1,9 @@
 {%- from 'fub.jinja' import  interface_method, key_parameters -%}
-{%- macro default_method(name, child, return_type, parents_only=False, add_path=False) -%}
+{%- macro default_method(name, child, return_type, parents_only=False, path_name=None) -%}
 
 {{ ctx.module.top().get_copy_right() }}
 @Override
-public {{ return_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', parents_only, add_path) }}) {
+public {{ return_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', parents_only, path_name) }}) {
   System.out.println("{{ interface_method('get', name, child) }}");
   return {{ child.java_type | javadefault }};
 }
@@ -41,7 +41,7 @@ public class {{ name }} implements {{ ctx.interface_name }}{
 {%- for name, child in ctx.module.get_root_elements().items() recursive -%}
   {%- if loop.depth <= 2 %}{{ default_method(name, child, child.java_type, True) | indent(2) }}{%- endif -%}
   {%- if loop.depth <= 2 and child.keys -%} {{ default_method(name, child, child.element_type) | indent(2) }} {%- endif -%}
-  {%- if loop.depth == 2 and child.children -%} {{ default_method(name, child, child.element_type, add_path=True) | indent(2) }} {%- endif -%}
+  {%- if loop.depth == 2 and child.children -%} {{ default_method(name, child, child.element_type, path_name='remainingPath') | indent(2) }} {%- endif -%}
 {{ loop(child.children.items()) }}
 {%- endfor %}
 }

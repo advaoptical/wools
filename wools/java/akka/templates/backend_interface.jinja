@@ -23,7 +23,7 @@ public interface {{ name }} {
   {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String') }});
 {%- endif -%}
 {%- if loop.depth == 2 and child.children %}
-  {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', add_path=True) }});
+  {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', path_name='remainingPath') }});
 {%- endif -%}
   {{- loop(child.children.items()) }}
 {%- endfor %}
