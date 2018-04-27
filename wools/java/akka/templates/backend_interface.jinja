@@ -15,16 +15,16 @@ public interface {{ name }} {
     {%- endfor -%}{%- endif -%}
     );
 {%- endfor %}
-{% for name, child in ctx.module.get_root_elements().items() recursive %}
-{%- if loop.depth <= 2 %}
-  {{child.java_type}} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', True) }});
+{% for name, node in ctx.module.get_root_elements().items() recursive %}
+{%- if loop.depth <= ctx.levels %}
+  {{node.java_type}} {{ interface_method('get', name, node) }}({{ key_parameters(node, 'String', True) }});
 {%- endif %}
-{%- if loop.depth <= 2 and child.keys %}
-  {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String') }});
+{%- if loop.depth <= ctx.levels and node.keys %}
+  {{ node.element_type }} {{ interface_method('get', name, node) }}({{ key_parameters(node, 'String') }});
 {%- endif -%}
-{%- if loop.depth == 2 and child.children %}
-  {{ child.element_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', path_name='remainingPath') }});
+{%- if loop.depth == ctx.levels and node.children %}
+  {% if node.keys %}{{ node.element_type }}{% else %}{{node.java_type}}{%- endif %} {{ interface_method('get', name, node) }}({{ key_parameters(node, 'String', path_name='remainingPath') }});
 {%- endif -%}
-  {{- loop(child.children.items()) }}
+  {{- loop(node.children.items()) }}
 {%- endfor %}
 }

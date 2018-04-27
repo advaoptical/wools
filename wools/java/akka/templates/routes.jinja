@@ -144,21 +144,21 @@ public class {{ name }} extends AllDirectives {
   return get(()-> route(
   {%- for name, child in mod.get_root_elements().items() recursive %}
   {%- set is_list = 'list' == child.group and child.keys %}
-  {%- if loop.depth <= 2 -%}
+  {%- if loop.depth <= ctx.levels -%}
     pathPrefix("{{ name }}", () -> {% if child.children -%}
       route(jsonMarshallOK( {{- backend_supplier(name, child, True) -}} ),
       {%- if is_list -%}
         extractKey({{ child.keys[0] }} -> route( jsonMarshallOK( {{- backend_supplier(name, child) -}} ),
       {%- endif -%}
       {{- loop(child.children.items()) }}
-      {%- if loop.depth == 2 -%}
+      {%- if loop.depth == ctx.levels -%}
         extractUnmatchedPath( remainingPath -> jsonMarshallOK(() -> backend.{{ interface_method('get', name, child) -}}
         ( {{- key_parameters(child, path_name='remainingPath') -}} ))){%- endif -%}
       {%- if is_list -%})){%- endif -%} ))
-      {%- if not (loop.depth == 1 and loop.last) -%} , {%- endif -%}
     {%- else -%}
      jsonMarshallOK( {{- backend_supplier(name, child, True) -}} ))
     {%- endif -%}
+    {%- if not loop.last -%} , {%- endif -%}
   {%- endif -%}
   {%- endfor -%} )
   );
