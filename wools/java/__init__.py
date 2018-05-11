@@ -520,7 +520,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.fill_template('grouping.jinja', self.classes)
         # generate unions
         self.fill_template('union.jinja', self.unions())
-        if not WOOL.beans_only:
+        if not self.WOOL.beans_only:
             # generate empty xml_config template for NETCONF use
             # self.fill_template('empty_config.jinja',
             #                    {'empty_XML_config': module})
