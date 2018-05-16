@@ -274,11 +274,28 @@ class JavaNodeWrapper:
             result += getattr(self, 'keys', ())
         return result
 
-    def collect_children(self, caller):
+    def generate_java_type(self):
 
-        for item in self.uses.values():
-            item.collect_children(caller)
-        caller.children.update(self.children)
+        if self.is_augmented:
+            java_type = self.generate_java_key()
+        else:
+            java_type = java_class_name(self.yang_name())
+            if java_type in self.top().classes.keys():
+                twin = self.top().classes[java_type]
+                if self.yang_type() != twin.yang_type():
+                    java_type = java_type + 'Top'
+
+        return java_type
+
+    def generate_java_key(self):
+
+        key = ''
+        if self.parent.parent:
+            key = self.parent.generate_java_key()
+        if key:
+            return key + java_class_name(self.yang_name())
+        else:
+            return java_class_name(self.yang_name())
 
 
 class JavaTyponder(JavaNodeWrapper):
@@ -520,7 +537,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.fill_template('grouping.jinja', self.classes)
         # generate unions
         self.fill_template('union.jinja', self.unions())
-        if not WOOL.beans_only:
+        if not self.WOOL.beans_only:
             # generate empty xml_config template for NETCONF use
             # self.fill_template('empty_config.jinja',
             #                    {'empty_XML_config': module})
@@ -600,9 +617,10 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
     def __init__(self, statement, parent):
         super(JavaContainer, self).__init__(statement, parent)
         self.java_imports = ImportDict()
+        # FIXME: remove special handling for Tapi, not needed any more
         if 'tapi' in self.top().yang_module() and self.parent == self.top():
             # fixing name collision in the ONF TAPI: context
-            self.java_type = java_class_name(self.yang_name()) + "Top"
+            self.java_type = self.generate_java_type()
             for name in set(self.uses.keys()):
                 self.uses.pop(name)
                 self.top().classes.pop(name)
@@ -619,7 +637,7 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
             # -> variable
         elif len(self.uses) == 1 and len(self.vars) == 0:
             class_item = next(iter(self.uses.values()))
-            self.java_type = class_item.java_type
+            self.java_type = class_item.generate_java_type()
             self.java_imports = class_item.java_imports
         else:
             # process exception when statement has i_children but no variables
@@ -632,7 +650,7 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
                         child.name = child.yang_name()
                         java_name = to_camelcase(child.name)
                         self.vars[java_name] = child
-            self.java_type = java_class_name(self.yang_name())
+            self.java_type = self.generate_java_type()
             self.top().add_class(self.java_type, self)
             self.java_imports.add_import(self.package(), self.java_type)
 
@@ -677,7 +695,7 @@ class JavaList(JavaGrouponder, PARENT['list']):
         # if new variables are defined in the list, a helper class is needed
         # FIXME: the commented code (previous fixme) breaks this check
         if self.children and 0 < len(self.vars):
-            self.element_type = (java_class_name(self.yang_name()) +
+            self.element_type = (self.generate_java_type() +
                                  JAVA_LIST_CLASS_APPENDIX)
             self.top().add_class(self.element_type, self)
             self.java_type = 'List<%s>' % self.element_type
@@ -708,10 +726,10 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
 
     def __init__(self, statement, parent):
         super(JavaGrouping, self).__init__(statement, parent)
-        self.java_type = java_class_name(self.yang_name())
+        self.java_type = self.generate_java_type()
         self.java_imports = ImportDict()
         self.java_imports.add_import(self.package(), self.java_type)
-        self.top().add_class(java_class_name(self.yang_name()), self)
+        self.top().add_class(self.java_type, self)
         for sub_st in statement.substmts:
             if sub_st.keyword == 'choice':
                 for case in sub_st.substmts:
@@ -752,7 +770,7 @@ class JavaTypeDef(JavaTyponder, PARENT['typedef']):
             self.java_type = self.reference.data_type
             self.java_imports.merge(self.reference.java_imports)
         else:
-            self.java_type = java_class_name(self.yang_name())
+            self.java_type = self.generate_java_type()
             self.top().add_typedef(self.java_type, self)
             self.java_imports.add_import(self.package(), self.java_type)
 
@@ -783,7 +801,7 @@ class JavaBits(NodeWrapper):
     def __init__(self, statement, parent):
         super().__init__(statement, parent)
         self.java_imports = ImportDict()
-        self.java_type = java_class_name(self.yang_name())
+        self.java_type = self.generate_java_type()
         self.java_imports.add_import(self.package(), self.java_type)
         self.bits = OrderedDict()
         self.group = 'bits'
@@ -825,7 +843,7 @@ class JavaEnumeration(JavaNodeWrapper, PARENT['enumeration']):
     def __init__(self, statement, parent):
         super(JavaEnumeration, self).__init__(statement, parent)
         self.java_imports = ImportDict()
-        self.java_type = java_class_name(self.yang_name())
+        self.java_type = self.generate_java_type()
         self.java_imports.add_import(
             self.package(), java_class_name(self.parent.yang_name()))
         self.group = 'enum'
@@ -863,7 +881,7 @@ class JavaCase(JavaGrouponder, PARENT['case']):
     def __init__(self, statement, parent):
         super(JavaCase, self).__init__(statement, parent)
         self.java_imports = ImportDict()
-        self.java_type = java_class_name(self.yang_name()) + 'CaseType'
+        self.java_type = self.generate_java_type() + 'CaseType'
         self.top().add_class(self.java_type, self)
         self.java_imports.add_import(self.package(), self.java_type)
 
