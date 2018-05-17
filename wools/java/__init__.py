@@ -550,7 +550,8 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
                     if hasattr(child, 'keys'):
                         if self.yang_module().replace('-', '.') not in \
                                 child.java_imports.imports:
-                            rpc_imports.update(child.java_imports.get_imports())
+                            rpc_imports.update(
+                                child.java_imports.get_imports())
 
             rpc_dict = {'rpcs': self.rpcs,
                         'imports': rpc_imports,
