@@ -68,8 +68,6 @@ def generate_output(wrapped_module):
 
 PARENT = WOOL.parent
 
-JAVA_RESERVED_WORDS = frozenset(["switch", "case"])
-
 JAVA_LIST_IMPORTS = ('java.util', 'List')
 
 JAVA_LIST_CLASS_APPENDIX = 'ListType'
@@ -86,7 +84,7 @@ JAVA_WRAPPER_CLASSES = {
     "double": "Double"
 }
 
-JAVA_FORBIDDEN_ROOTS = ('rpc')
+JAVA_FORBIDDEN_ROOTS = {'rpc'}
 
 default_values = {
     'int': 0,
@@ -601,7 +599,8 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
                     if hasattr(child, 'keys'):
                         if self.yang_module().replace('-', '.') not in \
                                 child.java_imports.imports:
-                            rpc_imports.update(child.java_imports.get_imports())
+                            rpc_imports.update(
+                                child.java_imports.get_imports())
 
             rpc_dict = {'rpcs': self.rpcs,
                         'imports': rpc_imports,
@@ -647,7 +646,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
 
         template = self.env.get_template(template_name)
         # get the output path for the file
-        output_path = "%s" % (self.output_path)
+        output_path = "%s" % self.output_path
         # create folder if not available
         if not os.path.exists(output_path):
             os.makedirs(output_path)

@@ -7,7 +7,7 @@ setup(
     description=(
         "Certified Alpakka Wools for knitting code from Jinja templates"),
 
-    install_requires=['alpakka'],
+    install_requires=['alpakka', 'jinja2'],
 
     packages=find_packages(include=['wools', 'wools.*']),
 
