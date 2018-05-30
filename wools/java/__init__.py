@@ -16,7 +16,55 @@ WOOL = register_wool('Java', __name__, data_type_patterns={
     (r"decimal64", "double"),
     (r"binary", "byte[]"),
     (r"empty", "Object"),
-})
+}, options=['prefix', 'beans-only', 'interface-levels'])
+
+
+def generate_output(wrapped_module):
+    """
+    organizes and orchestrate the class file generation
+
+    :return:
+    """
+    # generate enum classes
+    wrapped_module.fill_template('enum_type.jinja', wrapped_module.enums())
+    # generate class extensions
+    wrapped_module.fill_template('class_extension.jinja', wrapped_module.types())
+    # generate base class extensions
+    wrapped_module.fill_template('class_type.jinja', wrapped_module.base_extensions())
+    # generate classes
+    wrapped_module.fill_template('grouping.jinja', wrapped_module.classes)
+    # generate unions
+    wrapped_module.fill_template('union.jinja', wrapped_module.unions())
+    if not wrapped_module.beans_only:
+        # generate empty xml_config template for NETCONF use
+        # wrapped_module.fill_template('empty_config.jinja',
+        #                    {'empty_XML_config': module})
+        # run only if rpcs are available
+        # if module.rpcs:
+        if_name = '%sInterface' % wrapped_module.java_name
+        rpc_imports = {imp for rpc in wrapped_module.rpcs.values()
+                       if hasattr(rpc, 'imports')
+                       for imp in rpc.imports()}
+        for root in wrapped_module.get_root_elements().values():
+            for child in root.children.values():
+                if hasattr(child, 'keys'):
+                    if wrapped_module.yang_module().replace('-', '.') not in \
+                            child.java_imports.imports:
+                        rpc_imports.update(child.java_imports.get_imports())
+
+        rpc_dict = {'rpcs': wrapped_module.rpcs,
+                    'imports': rpc_imports,
+                    'package': wrapped_module.package(),
+                    'path': wrapped_module.subpath(),
+                    'module': wrapped_module}
+        wrapped_module.fill_template('backend_interface.jinja',
+                           {if_name: rpc_dict})
+        rpc_dict['interface_name'] = if_name
+        wrapped_module.fill_template('backend_impl.jinja',
+                           {'%sBackend' % wrapped_module.java_name: rpc_dict})
+        wrapped_module.fill_template('routes.jinja',
+                           {'%sRoutes' % wrapped_module.java_name: rpc_dict})
+    wrapped_module.generate_pom('pom.jinja', wrapped_module)
 
 PARENT = WOOL.parent
 
@@ -247,7 +295,7 @@ class JavaNodeWrapper:
         The pakackage name of this module.
         :return: the package name
         """
-        return to_package(self.yang_module(), self.WOOL.prefix)
+        return to_package(self.yang_module(), self.top().prefix)
 
     @template_var
     def subpath(self):
@@ -255,8 +303,8 @@ class JavaNodeWrapper:
         The subpath of this module.
         :return: the package name
         """
-        if self.WOOL.prefix:
-            return '%s/%s' % (self.WOOL.prefix.replace(".", "/"),
+        if self.prefix:
+            return '%s/%s' % (self.prefix.replace(".", "/"),
                               self.yang_module().lower().replace("-", "/"))
         else:
             return self.yang_module().lower().replace("-", "/")
@@ -308,7 +356,7 @@ class JavaTyponder(JavaNodeWrapper):
             elif self.data_type == 'union':
                 self.type = JavaUnion(statement.search_one('type'), self)
             elif self.data_type == 'leafref':
-                if self.reference:
+                if hasattr(self, 'reference'):
                     self.type = self.reference
                 else:
                     self.type = 'leafref'
@@ -394,7 +442,8 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.classes = OrderedDict()
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
-        self.prefix = self.WOOL.prefix
+        self.prefix = self.WOOL.config['prefix']
+        self.beans_only = self.WOOL.config['beans-only']
         self.java_name = java_class_name(statement.i_prefix)
 
         self.output_path = self.WOOL.output_path
@@ -621,9 +670,6 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
         if 'tapi' in self.top().yang_module() and self.parent == self.top():
             # fixing name collision in the ONF TAPI: context
             self.java_type = self.generate_java_type()
-            for name in set(self.uses.keys()):
-                self.uses.pop(name)
-                self.top().classes.pop(name)
             for ch_name, ch_wrapper in self.children.items():
                 # store the yang name
                 ch_wrapper.name = ch_wrapper.yang_name()
