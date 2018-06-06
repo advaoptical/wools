@@ -22,3 +22,15 @@ def clear_data_structure(wrapped_modules, module):
     :return:
     """
     WOOL.parent.clear_data_structure(wrapped_modules, module)
+
+
+def parse_config(module, path):
+    """
+    organizes and orchestrate the wool specific option and configuration
+    handling
+
+    :param module:
+    :param path:
+    :return:
+    """
+    WOOL.parent.parse_config(module, path)

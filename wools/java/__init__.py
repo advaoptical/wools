@@ -1,6 +1,7 @@
 from alpakka import register_wool
 
 import logging
+import configparser
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -83,3 +84,18 @@ def clear_data_structure(wrapped_modules, module):
             else:
                 wrapped_modules[child.statement.i_orig_module.arg].classes[name] = child
                 module.classes.pop(name)
+
+
+def parse_config(module, path):
+    """
+    organizes and orchestrate the wool specific option and configuration
+    handling
+
+    :param module:
+    :param path:
+    :return:
+    """
+    location = path
+    config = configparser.ConfigParser()
+    config.read(location)
+    module.config = config['Wool']
