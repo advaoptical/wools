@@ -66,3 +66,20 @@ def generate_output(wrapped_module):
         wrapped_module.fill_template('routes.jinja',
                            {'%sRoutes' % wrapped_module.java_name: rpc_dict})
     wrapped_module.generate_pom('pom.jinja', wrapped_module)
+
+
+def clear_data_structure(wrapped_modules, module):
+    """
+    organizes and orchestrate the duplication check and the correct module
+    organization
+
+    :param wrapped_modules: dictionary of all modules
+    :return:
+    """
+    for name, child in set(module.classes.items()):
+        if child.statement.i_orig_module.arg != module.yang_module():
+            if name in wrapped_modules[child.statement.i_orig_module.arg].classes:
+                module.classes.pop(name)
+            else:
+                wrapped_modules[child.statement.i_orig_module.arg].classes[name] = child
+                module.classes.pop(name)
