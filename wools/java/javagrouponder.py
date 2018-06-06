@@ -1,5 +1,5 @@
 from wools.java.javanodewrapper import JavaNodeWrapper
-from . import utils as ju
+from . import javautils as ju
 from . import PARENT
 
 from alpakka.templates import template_var

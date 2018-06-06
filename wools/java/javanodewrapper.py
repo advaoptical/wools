@@ -2,7 +2,7 @@ from alpakka.wrapper.nodewrapper import NodeWrapper
 from alpakka.templates import template_var
 from collections import OrderedDict
 
-from . import utils as ju
+from . import javautils as ju
 from . import PARENT
 
 from jinja2 import Environment, PackageLoader
@@ -96,6 +96,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.typedefs = OrderedDict()
         self.prefix = self.WOOL.config['prefix']
         self.beans_only = self.WOOL.config['beans-only']
+        self.copyright = self.WOOL.config['copyright']
         self.java_name = ju.java_class_name(statement.i_prefix)
 
         self.output_path = self.WOOL.output_path
@@ -171,6 +172,10 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
             if child.yang_type() not in ju.JAVA_FORBIDDEN_ROOTS:
                 result[name] = child
         return result
+
+    @template_var
+    def get_copy_right(self):
+        return self.copyright
 
     def add_class(self, class_name, wrapped_description):
         """

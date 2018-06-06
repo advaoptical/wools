@@ -14,6 +14,7 @@ setup(
     entry_points={'alpakka_wools': [
         'Java=wools.java',
         'Akka=wools.java.akka',
+        'Jersey=wools.java.jersey',
     ]},
 
     keywords=[

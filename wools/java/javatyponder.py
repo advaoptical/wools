@@ -4,7 +4,7 @@ from wools.java.javanodewrapper import JavaBaseType
 from wools.java.javanodewrapper import JavaUnion
 from wools.java.javanodewrapper import JavaBits
 from . import PARENT
-from . import utils as ju
+from . import javautils as ju
 
 from alpakka.templates import template_var
 
