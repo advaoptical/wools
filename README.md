@@ -12,7 +12,8 @@ writing a new wool.
 ### General overview on the wool
 
 Each wool inside the wools project represents a programming language or framework for which the alpakka project can create code skeletons. The wools
-itself are structured in a tree like way, the root wool is the default from which all other wools are derived.
+itself are structured in a tree like way, the root wool is the default from which all other wools are derived from. The tree like structure is also
+presented by directory structure of the project. 
 
 Each wool must be registered as part of the wools project, this registration can be performed in two different way. The persistent way is to perform
 the registration during the wool installation, to do this the wool must be populated inside the setup.py of the wools project as entry point. Another
@@ -26,11 +27,19 @@ How the mandatory methods and the wool specific wrapping classes can be implemen
 ### Initial developer Guide
 
 A wool implementation is build of two parts, the first part is mandatory and predefined by the implementation of the alpakka project. It is common to
-implement this part in the *__init__.py* which should be present on the root level of the wool directory structure. The second part of the wool
+implement this part in the __init__.py which should be present on the root level of the wool directory structure. The second part of the wool
 implementation contains the wool specific wrapper classes for the different type of YANG statement, which are extending the node wrapper classes of
 the alpakka project.
 
 #### required methods
+
+All required methods and attributes are implemented and set in the __init__.py file which is located at the top level of the individual wool directory.
+The head of each wool __init__.py file must include the following lines:
+
+```python
+from alpakka import register_wool
+WOOL = register_wool('<name of the wool>', __name__, parent='<name of the parent wool>')
+```
 
 #### wrapping classes
 
@@ -43,7 +52,7 @@ This section gives a bullet based overview of all steps which should be performe
 * create the __init__.py
   * import the register_wool method of the alpakka project
   * call the register_wool method
-  * implement the mandatory wools methods (generate_output, clear_data_structure and parse_config)
+  * implement the mandatory wools methods (generate_output, data_cleansing and parse_config)
 
 * create and implement the required classes for the wool specific data transformation
 	

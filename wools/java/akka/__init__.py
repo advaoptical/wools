@@ -13,7 +13,7 @@ def generate_output(wrapped_module):
     WOOL.parent.generate_output(wrapped_module)
 
 
-def clear_data_structure(wrapped_modules, module):
+def data_cleansing(wrapped_modules, module):
     """
     organizes and orchestrate the duplication check and the correct module
     organization
