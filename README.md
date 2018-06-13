@@ -11,27 +11,27 @@ writing a new wool.
 
 ### General overview on the wool
 
+Each wool inside the wools project represents a programming language or framework for which the alpakka project can create code skeletons. The wools
+itself are structured in a tree like way, the root wool is the default from which all other wools are derived.
+Each wool must be registered as part of the wools project, this registration can be performed in two different way. The persistent way is to perform
+the registration during the wool installation, to do this the wool must be populated inside the setup.py of the wools project
+
 ### Initial developer Guide
 
 #### required methods
 
-The *alpakka* project provides the following command line options
+## bullet based guide line
 
-* '--alpakka-output-path' (**required**)
-	- output path for the generated classes
-	- indicates the root directory of the java/maven project
+This section gives a bullet based overview of all steps which should be performed to implement and register a new wool as part of the wool project
+
+* create new directory inside the wools project
 	
-* '-w; --wool' (**required**)
-	- The Wool to use for knitting the code
-	- indicates to wool, which is representing the different programming languages and frameworks
+* create the __init__.py
+	** import the register_wool method of the alpakka project
+	** call the register_wool method
+	** implement the mandatory wools methods (generate_output, clear_data_structure and parse_config)
+
+* create and implement the required classes for the wool specific data transformation
 	
-* '--wool-package-prefix'
-	- package prefix to be prepended to the generated classes
-	- could be for example the java name prefix like com.example
-	
-* '--akka-beans-only'
-	- @Thomas was macht diese Option eigentlich?
-	
-* '-i; --interactive'
-	- run alpakka in interactive mode by starting an IPython shell before template generation
+* register the wool temporary or permanent
 
