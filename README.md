@@ -25,7 +25,14 @@ How the mandatory methods and the wool specific wrapping classes can be implemen
 
 ### Initial developer Guide
 
+A wool implementation is build of two parts, the first part is mandatory and predefined by the implementation of the alpakka project. It is common to
+implement this part in the *__init__.py* which should be present on the root level of the wool directory structure. The second part of the wool
+implementation contains the wool specific wrapper classes for the different type of YANG statement, which are extending the node wrapper classes of
+the alpakka project.
+
 #### required methods
+
+#### wrapping classes
 
 ## bullet based guide line
 
