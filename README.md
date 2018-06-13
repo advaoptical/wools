@@ -18,7 +18,12 @@ presented by directory structure of the project.
 Each wool must be registered as part of the wools project, this registration can be performed in two different way. The persistent way is to perform
 the registration during the wool installation, to do this the wool must be populated inside the setup.py of the wools project as entry point. Another
 way to register a wool is a temporary way, for that the alpakka project has to be loaded in a terminal and than the population of the wool can be done
-executing *<command for wool population is missing>*.
+executing the following commands.
+
+```python
+import alpakka
+alpakka.register_wool('<name>', 'wools.<parent>.<name>', parent='<name>')
+```
 
 If a wool is registered successfully it can be used by the alpakka by setting the appropriate command line option. The alpakka project requires some
 mandatory methods which should be present as part of each wool. Beside this each wool can implement own wrapping classes for each YANG statement type.
