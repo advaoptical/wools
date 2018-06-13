@@ -51,7 +51,7 @@ def generate_output(wrapped_module):
 
 	pass
 	
-def data_cleansing(wrapped_modules, module):
+def wrapping_postprocessing(wrapped_modules, module):
 
 	pass
 	
@@ -60,6 +60,13 @@ def parse_config(module, path):
 	pass
 	
 ```
+
+Each of this methods is called as part of the wrapping process initiated by the alpakka process. The first methods (generate_output) is dedicated
+to organize the output generation and is called as last step of the wrapping chain, as argument the wrapped_module is given. The second mandatory
+method is wrapping_postprocessing, the task of this method is to remove duplicated statements and to sort the statements by there parent. The reason for
+that is that pyang handle each YANG module in a stand alone way, so that statements which are used by different modules are imported and wrapped
+multiple times and are placed in the tree structure of the importing modules. To replace them at the importing module and to avoid overwriting
+during the output generation this method is called after the wrapping task is finalized 
 
 #### wrapping classes
 
@@ -72,7 +79,7 @@ This section gives a bullet based overview of all steps which should be performe
 * create the __init__.py
   * import the register_wool method of the alpakka project
   * call the register_wool method
-  * implement the mandatory wools methods (generate_output, data_cleansing and parse_config)
+  * implement the mandatory wools methods (generate_output, wrapping_postprocessing and parse_config)
 
 * create and implement the required classes for the wool specific data transformation
 	

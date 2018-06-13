@@ -13,7 +13,7 @@ def generate_output(wrapped_module):
     WOOL.parent.generate_output(wrapped_module)
 
 
-def data_cleansing(wrapped_modules, module):
+def wrapping_postprocessing(wrapped_modules, module):
     """
     organizes and orchestrate the duplication check and the correct module
     organization
@@ -21,7 +21,7 @@ def data_cleansing(wrapped_modules, module):
     :param wrapped_modules: dictionary of all modules
     :return:
     """
-    WOOL.parent.clear_data_structure(wrapped_modules, module)
+    WOOL.parent.wrapping_postprocessing(wrapped_modules, module)
 
 
 def parse_config(module, path):
