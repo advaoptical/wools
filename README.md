@@ -41,6 +41,26 @@ from alpakka import register_wool
 WOOL = register_wool('<name of the wool>', __name__, parent='<name of the parent wool>')
 ```
 
+This lines are required for a correct wool registration, the name of the wool can freely be chosen, the name of the parent wool has to be set to the
+name of the parent wool or to 'default if no parent wool exists.
+
+Additional to the wool registration the __init__.py should also include the implementation of the tree mandatory methods. 
+
+```python
+def generate_output(wrapped_module):
+
+	pass
+	
+def data_cleansing(wrapped_modules, module):
+
+	pass
+	
+def parse_config(module, path):
+	
+	pass
+	
+```
+
 #### wrapping classes
 
 ## bullet based guide line
