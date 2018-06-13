@@ -13,8 +13,15 @@ writing a new wool.
 
 Each wool inside the wools project represents a programming language or framework for which the alpakka project can create code skeletons. The wools
 itself are structured in a tree like way, the root wool is the default from which all other wools are derived.
+
 Each wool must be registered as part of the wools project, this registration can be performed in two different way. The persistent way is to perform
-the registration during the wool installation, to do this the wool must be populated inside the setup.py of the wools project
+the registration during the wool installation, to do this the wool must be populated inside the setup.py of the wools project as entry point. Another
+way to register a wool is a temporary way, for that the alpakka project has to be loaded in a terminal and than the population of the wool can be done
+executing *<command for wool population is missing>*.
+
+If a wool is registered successfully it can be used by the alpakka by setting the appropriate command line option. The alpakka project requires some
+mandatory methods which should be present as part of each wool. Beside this each wool can implement own wrapping classes for each YANG statement type.
+How the mandatory methods and the wool specific wrapping classes can be implemented is presented in the following part.
 
 ### Initial developer Guide
 
