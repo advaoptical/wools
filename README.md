@@ -27,9 +27,9 @@ This section gives a bullet based overview of all steps which should be performe
 * create new directory inside the wools project
 	
 * create the __init__.py
-..* import the register_wool method of the alpakka project
-..* call the register_wool method
-..* implement the mandatory wools methods (generate_output, clear_data_structure and parse_config)
+  * import the register_wool method of the alpakka project
+  * call the register_wool method
+  * implement the mandatory wools methods (generate_output, clear_data_structure and parse_config)
 
 * create and implement the required classes for the wool specific data transformation
 	
