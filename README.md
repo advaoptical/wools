@@ -6,7 +6,8 @@ data from the wool wrapper of the alpakka project as well as specifying the outp
 
 ## Getting Started
 
-The following steps whill guide 
+The following steps are guiding through a basic overview of the wools project and functional routine followed by a basic developer Guide on the subject
+writing a new wool.
 
 ### General overview on the wool
 
