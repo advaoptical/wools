@@ -2,7 +2,6 @@ from wools.java.javanodewrapper import JavaNodeWrapper
 from wools.java.javagrouponder import JavaGrouponder
 from wools.java.javatyponder import JavaTyponder
 
-import logging
 import configparser
 import re
 
