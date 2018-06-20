@@ -12,6 +12,7 @@ wool registration and the three mandatory methods. The four additional files are
 into different groups, the mayor group is implemented inside the javanodewrapper.py classes which are implemented
 there are
 
+
 ..* JavaBaseType
 ..* JavaNodeWrapper
 ..* JavaModule
@@ -22,16 +23,20 @@ there are
 ..* JavaUnion
 ..* JavaRPC
 
+
 All YANG statements which are representing type based nodes are implemented inside the javatyponder.py file. This file
 include the following classes
+
 
 ..* JavaTyponder
 ..* JavaLeaf
 ..* JavaTypeDef
 ..* JavaLeafList
 
+
 The wrapper classes for YANG statements which can include other YANG statements as children. Python classes which are
 included in this file are
+
 
 ..* JavaGrouponder
 ..* JavaContainer
@@ -42,9 +47,11 @@ included in this file are
 ..* JavaInput
 ..* JavaOutput
 
+
 The last python class file is the javautils.py, this file provides some general java specific functionalities which are
 used by all other python class files. This file does not only include classes but also some stand alone methods. The 
 following classes and methods are provided
+
 
 ..* ImportDict
 ..* java_default
@@ -53,6 +60,7 @@ following classes and methods are provided
 ..* to_package
 ..* to_camelcase
 ..* java_class_name
+
 
 Additional to the mentioned python files the java includes the wool folder for the akka and jersey wool and a config
 directory which contains the wool configuration file (wool_config.ini) and the current copyright file (copyright.txt).
