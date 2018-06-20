@@ -81,7 +81,7 @@ def wrapping_postprocessing(module, wrapped_modules):
     for name, child in set(module.classes.items()):
         if child.statement.i_orig_module.arg != module.yang_module():
             if name in wrapped_modules[child.statement.i_orig_module.arg
-            ].classes:
+                                       ].classes:
                 module.classes.pop(name)
             else:
                 wrapped_modules[child.statement.i_orig_module.arg].classes[
