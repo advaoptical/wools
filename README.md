@@ -121,6 +121,7 @@ Beside this minimal requirements it is possible to implement additional data man
 Thereby it is possible to use all attributes and methods which are provided by the nodewrapper. An overview of this attributes and methods is given
 in the following figure.
 
+![alt text](https://mgn-s-at-source.advaoptical.com/gitlab/anden/alpakka/blob/wrapperRebuild/NodeWrapperRebuildImplemented.jpg)
 
 ## bullet based guide line
 
