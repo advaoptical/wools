@@ -174,7 +174,8 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
             if sub_st.keyword == 'choice':
                 for case in sub_st.substmts:
                     if case.keyword == 'case':
-                        java_name = ju.to_camelcase(re.sub(r'^_', '', case.arg))
+                        java_name = ju.to_camelcase(re.sub(r'^_', '',
+                                                           case.arg))
                         var = JavaCase(case, self)
                         var.name = case.arg
                         self.vars[java_name] = var

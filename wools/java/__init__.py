@@ -60,13 +60,13 @@ def generate_output(module):
                     'package': module.package(),
                     'path': module.subpath(),
                     'module': module}
-        module.fill_template('backend_interface.jinja',
-                           {if_name: rpc_dict})
+        module.fill_template('backend_interface.jinja', {
+            if_name: rpc_dict})
         rpc_dict['interface_name'] = if_name
-        module.fill_template('backend_impl.jinja',
-                           {'%sBackend' % module.java_name: rpc_dict})
-        module.fill_template('routes.jinja',
-                           {'%sRoutes' % module.java_name: rpc_dict})
+        module.fill_template('backend_impl.jinja', {
+            '%sBackend' % module.java_name: rpc_dict})
+        module.fill_template('routes.jinja', {
+            '%sRoutes' % module.java_name: rpc_dict})
     module.generate_pom('pom.jinja', module)
 
 
@@ -80,10 +80,12 @@ def wrapping_postprocessing(module, wrapped_modules):
     """
     for name, child in set(module.classes.items()):
         if child.statement.i_orig_module.arg != module.yang_module():
-            if name in wrapped_modules[child.statement.i_orig_module.arg].classes:
+            if name in wrapped_modules[child.statement.i_orig_module.arg
+            ].classes:
                 module.classes.pop(name)
             else:
-                wrapped_modules[child.statement.i_orig_module.arg].classes[name] = child
+                wrapped_modules[child.statement.i_orig_module.arg].classes[
+                    name] = child
                 module.classes.pop(name)
 
 
@@ -100,4 +102,5 @@ def parse_config(module, path):
     config = configparser.ConfigParser()
     config.read(location)
     module.config = config['Wool']
-    module.copyright = re.sub('wool_config.ini', config['Wool']['copyright'], path)
+    module.copyright = re.sub('wool_config.ini', config['Wool']['copyright'],
+                              path)

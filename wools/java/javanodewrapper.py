@@ -329,7 +329,7 @@ class JavaBits(NodeWrapper):
 
     def __init__(self, statement, parent):
         super().__init__(statement, parent)
-        self.java_imports = ImportDict()
+        self.java_imports = ju.ImportDict()
         self.java_type = self.generate_java_type()
         self.java_imports.add_import(self.package(), self.java_type)
         self.bits = OrderedDict()
