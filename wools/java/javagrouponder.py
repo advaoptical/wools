@@ -1,6 +1,6 @@
 from wools.java.javanodewrapper import JavaNodeWrapper
 from . import javautils as ju
-from . import PARENT
+from .wool import PARENT
 
 from alpakka.templates import template_var
 from collections import OrderedDict

@@ -3,7 +3,7 @@ from alpakka.templates import template_var
 from collections import OrderedDict
 
 from . import javautils as ju
-from . import PARENT
+from .wool import PARENT
 
 from jinja2 import Environment, PackageLoader
 
