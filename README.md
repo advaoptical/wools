@@ -123,6 +123,8 @@ in the following figure.
 
 ![NodeWrapperUML diagram](https://mgn-s-at-source.advaoptical.com/gitlab/anden/alpakka/raw/wrapperRebuild/NodeWrapperRebuildImplemented.png "NodeWrapperUML diagram")
 
+For more detail please see the java wool documentation and implementation.
+
 ## bullet based guide line
 
 This section gives a bullet based overview of all steps which should be performed to implement and register a new wool as part of the wool project
