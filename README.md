@@ -22,17 +22,17 @@ executing the following commands.
 
 ```python
 import alpakka
-alpakka.register_wool('<name>', 'wools.<parent>.<name>', parent='<name>')
+alpakka.register_wool('<name>', 'wools.<parent>.<name>', parent='<parent>')
 ```
 
-If a wool is registered successfully it can be used by the alpakka by setting the appropriate command line option. The alpakka project requires some
+If a wool is registered successfully it can be used by alpakka through setting the appropriate command line option. The alpakka project requires some
 mandatory methods which should be present as part of each wool. Beside this each wool can implement own wrapping classes for each YANG statement type.
 How the mandatory methods and the wool specific wrapping classes can be implemented is presented in the following part.
 
 ### Initial developer Guide
 
 A wool implementation is build of two parts, the first part is mandatory and predefined by the implementation of the alpakka project. It is common to
-implement this part in the __init__.py which should be present on the root level of the wool directory structure. The second part of the wool
+implement this part in the __init__.py which should be present on the root level of each wool directory structure. The second part of the wool
 implementation contains the wool specific wrapper classes for the different type of YANG statement, which are extending the node wrapper classes of
 the alpakka project.
 
@@ -47,7 +47,7 @@ WOOL = register_wool('<name of the wool>', __name__, parent='<name of the parent
 ```
 
 This lines are required for a correct wool registration, the name of the wool can freely be chosen, the name of the parent wool has to be set to the
-name of the parent wool or to 'default if no parent wool exists.
+name of the used parent wool or to 'default if no parent wool exists.
 
 Additional to the wool registration the __init__.py should also include the implementation of the tree mandatory methods. 
 
@@ -66,12 +66,18 @@ def parse_config(module, path):
 	
 ```
 
-Each of this methods is called as part of the wrapping process initiated by the alpakka process. The first methods (generate_output) is dedicated
+Each of this methods is called as part of the wrapping process initiated by the alpakka process. The first method (generate_output) is dedicated
 to organize the output generation and is called as last step of the wrapping chain, as argument the wrapped_module is given. The second mandatory
-method is wrapping_postprocessing, the task of this method is to remove duplicated statements and to sort the statements by there parent. The reason for
-that is that pyang handle each YANG module in a stand alone way, so that statements which are used by different modules are imported and wrapped
-multiple times and are placed in the tree structure of the importing modules. To replace them at the importing module and to avoid overwriting
-during the output generation this method is called after the wrapping task is finalized 
+method is wrapping_postprocessing, the task which is performed by this method can be chosen freely. The first argument of this method is a dictionary
+of all wrapped modules, the second argument is one wrapped module out of the dict of wrapped modules. A example for the usage of this method is
+implemented as part of the java wool, the java wool uses the post-processing to remove duplicated statements and to move statements which are located
+inside the wrong module to the correct parenting module. This is needed because pyang handle each YANG module in a standalone way and imports all
+required statements, if a grouping is used inside different modules it is imported and processed multiple times. To avoid an overwriting during the
+output generation and to place the grouping at the module which is original implementing it the post processing is used. The last mandatory method
+(parse_config) is dedicated to handle all wool specific options which are provided as configuration file. The location and the name of the
+configuration can be parsed through the configuration-file-location command line option of the alpakka program. The method gets as argument the
+current module and the path which is specified by the command line option. The handling of the option can be implemented individually and accordingly
+to the requirements of the wool.
 
 #### wrapping classes
 
