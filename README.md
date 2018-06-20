@@ -52,11 +52,11 @@ name of the used parent wool or to 'default if no parent wool exists.
 Additional to the wool registration the __init__.py should also include the implementation of the tree mandatory methods. 
 
 ```python
-def generate_output(wrapped_module):
+def generate_output(module):
 
 	pass
 	
-def wrapping_postprocessing(wrapped_modules, module):
+def wrapping_postprocessing(module, wrapped_modules):
 
 	pass
 	
@@ -68,18 +68,59 @@ def parse_config(module, path):
 
 Each of this methods is called as part of the wrapping process initiated by the alpakka process. The first method (generate_output) is dedicated
 to organize the output generation and is called as last step of the wrapping chain, as argument the wrapped_module is given. The second mandatory
-method is wrapping_postprocessing, the task which is performed by this method can be chosen freely. The first argument of this method is a dictionary
-of all wrapped modules, the second argument is one wrapped module out of the dict of wrapped modules. A example for the usage of this method is
-implemented as part of the java wool, the java wool uses the post-processing to remove duplicated statements and to move statements which are located
-inside the wrong module to the correct parenting module. This is needed because pyang handle each YANG module in a standalone way and imports all
-required statements, if a grouping is used inside different modules it is imported and processed multiple times. To avoid an overwriting during the
-output generation and to place the grouping at the module which is original implementing it the post processing is used. The last mandatory method
-(parse_config) is dedicated to handle all wool specific options which are provided as configuration file. The location and the name of the
-configuration can be parsed through the configuration-file-location command line option of the alpakka program. The method gets as argument the
-current module and the path which is specified by the command line option. The handling of the option can be implemented individually and accordingly
-to the requirements of the wool.
+method is wrapping_postprocessing, the task which is performed by this method can be chosen freely. The first argument of this method is the wrapped
+module which is currently handled, the second argument is a dictionary of all wrapped modules including the current module. A example for the usage
+of this method is implemented as part of the java wool, the java wool uses the post-processing to remove duplicated statements and to move statements
+which are located inside the wrong module to the correct parenting module. This is needed because pyang handle each YANG module in a standalone way
+and imports all required statements, if a grouping is used inside different modules it is imported and processed multiple times. To avoid an
+overwriting during the output generation and to place the grouping at the module which is original implementing it the post processing is used.
+The last mandatory method (parse_config) is dedicated to handle all wool specific options which are provided as configuration file. The location
+and the name of the configuration can be parsed through the configuration-file-location command line option of the alpakka program. The method gets
+as argument the current module and the path which is specified by the command line option. The handling of the option can be implemented individually
+and accordingly to the requirements of the wool.
 
 #### wrapping classes
+
+Another important part of the wool implementation is the possibility to adapt the wrapping process to the requirements of the specific programming
+language, it is possible either to adapt the wrapping of single YANG statements. Independent on how many wrapping classes are changed a registration
+step must be performed, therefore the __init__.py of the wool must include the following lines.
+
+```python
+PARENT = WOOL.parent
+```
+
+If the implementation of the individual wrapper classes is done in different python files (what is recommended) the files must be imported afterwards.
+How to implement a wool specific wrapping class will be explained now based on the example of the java specific implementation of the YANG Leaf
+statement.
+
+```python
+import PARENT
+
+...
+
+class JavaLeaf(JavaTyponder, PARENT['leaf']):
+	
+	def __init__(self, statement, parent):
+		super(JavaLeaf, self).__init__(statement, parent)
+		self.java_type = self.type.java_type
+		self.java_imports = ...
+
+```
+
+To implement a wool specific first the PARENT parameter from the __init__.py must be imported. The class declaration can contain any inheritance
+statement, in the given example the leaf inherits from the JavaTyponder class, additional to that a link to the YANG statement which should be
+wrapped by this class should be initialized. This is done by the second inheritance parameter which links the class to the nodewrapper for the 
+leaf statement. For other statement types like container the statement should look like PARENT['container'] or accordingly for other YANG statement
+types. Inside the each wrapping class the constructor method __init__ must be present, and accept two arguments beside the object reference. The first
+of the two parameter is the raw YANG statement provided by pyang. The second argument contain a reference to the wrapped object of the parent
+statement, which is required to build the correct tree structure. The minimal implementation if the constructor should contain the super call, which 
+initiates the constructor of the inherited class. The super method requires as arguments the name of the current class and the object reference,
+additional inside the __init__ call the two arguments statement and parent are parsed which are part of each class.
+
+Beside this minimal requirements it is possible to implement additional data manipulations or functionalities required for the output generation.
+Thereby it is possible to use all attributes and methods which are provided by the nodewrapper. An overview of this attributes and methods is given
+in the following figure.
+
 
 ## bullet based guide line
 
