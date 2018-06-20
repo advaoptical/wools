@@ -1,10 +1,7 @@
-import sys
-
 from setuptools import find_packages
 from pkg_resources import iter_entry_points
 
 import alpakka
-
 
 WOOL_PACKAGES = {
     'Java': 'wools.java',

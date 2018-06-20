@@ -1,7 +1,6 @@
 from alpakka import register_wool
 
-
-WOOL = register_wool('Akka', __name__, parent='Java')
+WOOL = register_wool('Jersey', __name__, parent='Java')
 
 
 def generate_output(module):
