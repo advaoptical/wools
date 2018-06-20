@@ -2,6 +2,7 @@ from alpakka import register_wool
 
 import logging
 import configparser
+import re
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -99,3 +100,4 @@ def parse_config(module, path):
     config = configparser.ConfigParser()
     config.read(location)
     module.config = config['Wool']
+    module.copyright = re.sub('wool_config.ini', config['Wool']['copyright'], path)

@@ -96,10 +96,10 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.typedefs = OrderedDict()
         self.prefix = self.WOOL.config['prefix']
         self.beans_only = self.WOOL.config['beans-only']
-        self.copyright = self.WOOL.config['copyright']
+        self.copyright = ""
         self.java_name = ju.java_class_name(statement.i_prefix)
 
-        with open(self.WOOL.config['copyright'], 'r') as copyright_file:
+        with open(self.WOOL.copyright, 'r') as copyright_file:
             self.copyright = copyright_file.read()
 
         self.output_path = self.WOOL.output_path
