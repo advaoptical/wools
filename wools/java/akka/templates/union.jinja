@@ -1,4 +1,6 @@
 {%- from 'fub.jinja' import class_description -%}
+
+{{ ctx.top().get_copy_right() }}
 package {{ ctx.package() }};
 
 import java.io.Serializable;
