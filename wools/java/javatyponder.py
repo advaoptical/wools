@@ -7,9 +7,9 @@ from .wool import PARENT
 from . import javautils as ju
 
 from alpakka.templates import template_var
+from alpakka.logger import LOGGER
 
 from collections import OrderedDict
-import logging
 
 
 class JavaTyponder(JavaNodeWrapper):
@@ -33,7 +33,7 @@ class JavaTyponder(JavaNodeWrapper):
             elif not self.is_build_in_type:
                 self.type = self.top().derived_types[self.data_type]
             else:
-                logging.warning("Unmatched type: %s", self.data_type)
+                LOGGER.warning("Unmatched type: %s", self.data_type)
 
     @template_var
     def member_imports(self):

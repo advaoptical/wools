@@ -1,35 +1,7 @@
-from alpakka import register_wool
+from alpakka import WOOLS
+from .jersey_wool import JerseyWool
 
-WOOL = register_wool('Jersey', __name__, parent='Java')
-
-
-def generate_output(module):
-    """
-    organizes and orchestrate the class file generation
-
-    :return:
-    """
-    WOOL.parent.generate_output(module)
+WOOL = JerseyWool('Jersey', __name__, parent=WOOLS['java'])
+WOOLS.register(WOOL)
 
 
-def wrapping_postprocessing(module, wrapped_modules):
-    """
-    organizes and orchestrate the duplication check and the correct module
-    organization
-
-    :param wrapped_modules: dictionary of all modules
-    :return:
-    """
-    WOOL.parent.wrapping_postprocessing(module, wrapped_modules)
-
-
-def parse_config(module, path):
-    """
-    organizes and orchestrate the wool specific option and configuration
-    handling
-
-    :param module:
-    :param path:
-    :return:
-    """
-    WOOL.parent.parse_config(module, path)

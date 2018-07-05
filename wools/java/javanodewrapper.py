@@ -7,7 +7,7 @@ from .wool import PARENT
 
 from jinja2 import Environment, PackageLoader
 
-import logging
+from alpakka.logger import LOGGER
 import os
 import re
 
@@ -189,11 +189,11 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         """
         # TODO: might need additional processing
         if class_name in self.classes.keys():
-            logging.debug("Class already in the list: %s", class_name)
+            LOGGER.debug("Class already in the list: %s", class_name)
             if len(wrapped_description.children) != len(
                     self.classes[class_name].children
             ):
-                logging.warning(
+                LOGGER.warning(
                     "Number of children mismatch for %s between stored "
                     "module %s and new module %s",
                     class_name, self.classes[class_name].yang_name(),
@@ -204,7 +204,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
             # print the different children
             diff = old ^ new
             if diff:
-                logging.warning(
+                LOGGER.warning(
                     "Child mismatch for class %s between module %s and %s: %s",
                     class_name, self.classes[class_name].yang_name(),
                     self.yang_name(), diff)
@@ -298,7 +298,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
             # render the template
             output = template.render(ctx=context, name=key)
             # print the output for debugging
-            logging.debug(output)
+            LOGGER.debug(output)
             # write to file
             with open("%s/%s.java" % (output_path, key), 'w', encoding="utf-8",
                       newline="\n") as f:
@@ -315,7 +315,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         # render the template
         output = template.render(ctx=description_dict, name='')
         # print the output for debugging
-        logging.debug(output)
+        LOGGER.debug(output)
         # write to file
         with open("%s/%s.xml" % (output_path, 'pom'), 'w', encoding="utf-8",
                   newline="\n") as f:

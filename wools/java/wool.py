@@ -1,13 +1,7 @@
-from alpakka import register_wool
+from wools.java.java_wool import JavaWool
+from alpakka import WOOLS
 
-
-WOOL = register_wool('Java', __package__, data_type_patterns={
-    (r"u?int\d*", "int"),
-    (r"string", "String"),
-    (r"boolean", "boolean"),
-    (r"decimal64", "double"),
-    (r"binary", "byte[]"),
-    (r"empty", "Object"),
-}, options=['prefix', 'beans-only', 'interface-levels'])
+WOOL = JavaWool('Java', __package__, WOOLS.default)
+WOOLS.register(WOOL)
 
 PARENT = WOOL.parent
