@@ -50,7 +50,6 @@ class JavaWool(Wool):
                                 child.java_imports.imports:
                             rpc_imports.update(
                                 child.java_imports.get_imports())
-
             rpc_dict = {'rpcs': module.rpcs,
                         'imports': rpc_imports,
                         'package': module.package(),
@@ -70,17 +69,17 @@ class JavaWool(Wool):
         organizes and orchestrate the duplication check and the correct module
         organization
 
+        :param module: module that postprocessing is applied to
         :param wrapped_modules: dictionary of all modules
         :return:
         """
         for name, child in set(module.classes.items()):
-            if child.statement.i_orig_module.arg != module.yang_module():
-                if name in wrapped_modules[child.statement.i_orig_module.arg
-                ].classes:
+            original_module = child.statement.i_orig_module.arg
+            if original_module != module.yang_module():
+                if name in wrapped_modules[original_module].classes:
                     module.classes.pop(name)
                 else:
-                    wrapped_modules[child.statement.i_orig_module.arg].classes[
-                        name] = child
+                    wrapped_modules[original_module].classes[name] = child
                     module.classes.pop(name)
 
     def parse_config(self, path):

@@ -4,4 +4,3 @@ from wools.java.javagrouponder import JavaGrouponder
 from wools.java.javatyponder import JavaTyponder
 
 __all__ = ('JavaNodeWrapper', 'JavaGrouponder', 'JavaTyponder')
-
