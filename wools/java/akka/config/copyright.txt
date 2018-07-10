@@ -1,6 +1,7 @@
 /*
-*  Copyright 2018 ADVA Optical Networking SE. All rights reserved.
-*
-*  Owner: <owners name>
-*
-*/
+ *  Copyright ${YEAR} ADVA Optical Networking SE. All rights reserved.
+ *
+ *  Owner: __TYPE__YOUR__USER__HERE__
+ *
+ *  $Id: $
+ */
