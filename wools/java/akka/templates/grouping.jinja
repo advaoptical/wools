@@ -22,7 +22,7 @@ import {{ import }};
 public class {{ name }} {% if ctx.uses|length == 1 %}extends {{ ctx.uses.keys() | first }} {% endif %}implements Serializable {
 
   private static final long serialVersionUID = 1L;
-{% for key, var in ctx.vars.items() %}
+{% for key, var in ctx.vars.items() | sort(attribute='0') %}
 {{ class_description(var.description) | indent(2, True) }}
   private final {{ var.java_type }} {{ key }};
 {% endfor %}
@@ -30,22 +30,20 @@ public class {{ name }} {% if ctx.uses|length == 1 %}extends {{ ctx.uses.keys() 
   @JsonCreator
   public {{ name }} (
     {%- if ctx.uses|length == 1 -%}
-    {% for key, var in ctx.inherited_vars().items() -%}
+    {% for key, var in ctx.inherited_vars().items() | sort(attribute='0') -%}
       @JsonProperty("{{ var.yang_name() }}") {{ var.java_type }} {{ key }}{% if not loop.last -%},
     {% endif %}
     {%- endfor %}{% if ctx.vars %},{% endif %}{% endif %}
-    {% for key, var in ctx.vars.items() -%}
+    {% for key, var in ctx.vars.items() | sort(attribute='0') -%}
       @JsonProperty("{{ var.yang_name() }}") {{ var.java_type }} {{ key }}
     {%- if not loop.last -%},
     {% endif %}
     {%- endfor %}){
     {%- if ctx.uses|length == 1 %}
-    super({% for key in ctx.inherited_vars().keys() %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %});{% endif -%}
+    super({% for key in ctx.inherited_vars().keys() | sort %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %});{% endif -%}
     {%- for key, var in ctx.vars.items() %}
     this.{{ key }} = {{ key }}
-      {%- if 'list' in var.group %} != null ? ImmutableList.copyOf({{ key }}) : ImmutableList.
-        {%- if var.element_type %}<{{ var.element_type }}>
-        {%- endif %}of()
+      {%- if 'list' in var.group %} != null ? ImmutableList.copyOf({{ key }}) : ImmutableList.of()
       {%- endif %};{% endfor %}
   }
 
