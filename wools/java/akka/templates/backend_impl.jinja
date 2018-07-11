@@ -1,6 +1,6 @@
 {%- from 'fub.jinja' import  interface_method, key_parameters -%}
 
-{{ ctx.top().get_copy_right() }}
+{{ ctx.module.top().get_copy_right() }}
 {%- macro default_method(name, child, return_type, parents_only=False) %}
 @Override
 public {{ return_type }} {{ interface_method('get', name, child) }}({{ key_parameters(child, 'String', parents_only) }}) {

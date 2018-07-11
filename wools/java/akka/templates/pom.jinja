@@ -3,6 +3,12 @@
   <groupId>{{ ctx.group_id() }}</groupId>
   <artifactId>{{ ctx.group_id() }}</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+
+  <properties>
+    <guava.version>24.0-jre</guava.version>
+    <jackson.version>2.9.4</jackson.version>
+  </properties>
+
   <build>
     <sourceDirectory>src</sourceDirectory>
     <resources>
@@ -28,14 +34,14 @@
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.9.4</version>
+        <version>${jackson.version}</version>
     </dependency>
     <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>23.0</version>
+        <version>${guava.version}</version>
     </dependency>
-{%- if ctx.uses or ctx.vars %}
+{%- if not ctx.beans_only %}
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-actor_2.12</artifactId>

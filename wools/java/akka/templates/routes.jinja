@@ -1,6 +1,6 @@
 {%- from 'fub.jinja' import  interface_method, key_parameters -%}
 
-{{ ctx.top().get_copy_right() }}
+{{ ctx.module.top().get_copy_right() }}
 package {{ ctx.package }};
 
 import java.lang.reflect.InvocationTargetException;

@@ -95,7 +95,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
         self.prefix = self.WOOL.config['prefix']
-        self.beans_only = self.WOOL.config['beans-only']
+        self.beans_only = self.WOOL.config.getboolean("beans-only")
         self.copyright = ""
         self.java_name = ju.java_class_name(statement.i_prefix)
 
