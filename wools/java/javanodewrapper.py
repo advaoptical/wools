@@ -1,5 +1,4 @@
 from alpakka.wrapper.nodewrapper import NodeWrapper
-from alpakka.templates import template_var
 from collections import OrderedDict
 
 from . import javautils as ju
@@ -31,7 +30,6 @@ class JavaNodeWrapper:
     def __init__(self, *args):
         super().__init__(*args)
 
-    @template_var
     def package(self):
         """
         The pakackage name of this module.
@@ -39,7 +37,6 @@ class JavaNodeWrapper:
         """
         return ju.to_package(self.yang_module(), self.top().prefix)
 
-    @template_var
     def subpath(self):
         """
         The subpath of this module.
@@ -51,7 +48,6 @@ class JavaNodeWrapper:
         else:
             return self.yang_module().lower().replace("-", "/")
 
-    @template_var
     def collect_keys(self, only_parents=False):
         """
         Collects the list keys all the way up through the hierarchy.
@@ -117,7 +113,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
 
         super(JavaModule, self).__init__(statement, parent)
 
-    @template_var
     def enums(self):
         """
         Extracts the enumeration definitions from the typedefs.
@@ -127,7 +122,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         return {name: data for name, data in self.typedefs.items()
                 if data.type.group == 'enum'}
 
-    @template_var
     def base_extensions(self):
         """
         Extracts extension of base types from the typedefs.
@@ -137,7 +131,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         return {name: data for name, data in self.typedefs.items()
                 if data.type.group == 'base'}
 
-    @template_var
     def types(self):
         """
         Extracts extension of defined types from the typedefs.
@@ -147,7 +140,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         return {name: data for name, data in self.typedefs.items()
                 if data.type.group == 'type'}
 
-    @template_var
     def unions(self):
         """
         Extracts all unions from the typedefs.
@@ -157,18 +149,15 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         return {name: data for name, data in self.typedefs.items()
                 if data.type.group == 'union'}
 
-    @template_var
     def rpc_imports(self):
         return {imp for _, data in getattr(self, 'rpcs', {}).items()
                 for imp in getattr(data, 'imports', ())}
 
-    @template_var
     def group_id(self):
         result = ju.to_camelcase(self.yang_name())
         result = result[0].upper() + result[1:]
         return result
 
-    @template_var
     def get_root_elements(self):
         result = dict()
         for name, child in self.children.items():
@@ -176,7 +165,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
                 result[name] = child
         return result
 
-    @template_var
     def get_copy_right(self):
         return self.copyright
 
@@ -377,7 +365,6 @@ class JavaEnumeration(JavaNodeWrapper, PARENT['enumeration']):
             self.package(), ju.java_class_name(self.parent.yang_name()))
         self.group = 'enum'
 
-    @template_var
     def has_javanames(self):
         """
         Checks if at least one enum name was modified.

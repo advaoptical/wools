@@ -2,7 +2,6 @@ from wools.java.javanodewrapper import JavaNodeWrapper
 from . import javautils as ju
 from .wool import PARENT
 
-from alpakka.templates import template_var
 from collections import OrderedDict
 import re
 
@@ -29,7 +28,6 @@ class JavaGrouponder(JavaNodeWrapper):
             self.uses[ju.java_class_name(item.yang_name())] = \
                 self.uses.pop(item.yang_name())
 
-    @template_var
     def inherited_vars(self):
         """
         Collects a dictionary of inherited variables that are needed for
@@ -46,7 +44,6 @@ class JavaGrouponder(JavaNodeWrapper):
                 result[var_name] = var
         return result
 
-    @template_var
     def imports(self):
         """
         Collects all the imports that are needed for the grouping.
@@ -107,7 +104,6 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
             self.top().add_class(self.java_type, self)
             self.java_imports.add_import(self.package(), self.java_type)
 
-    @template_var
     def member_imports(self):
         """
         :return: imports needed if this class is a member
@@ -183,7 +179,6 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
                         var.name = case.arg
                         self.vars[java_name] = var
 
-    @template_var
     def type(self):
         # FIXME: needs fixing for more than one uses
         if not self.vars:
@@ -192,14 +187,12 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
         else:
             return None
 
-    @template_var
     def inheritance_imports(self):
         """
         :return: Imports needed if inheriting from this class.
         """
         return self.java_imports
 
-    @template_var
     def member_imports(self):
         return self.java_imports
 

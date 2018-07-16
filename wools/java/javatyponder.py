@@ -6,7 +6,6 @@ from wools.java.javanodewrapper import JavaBits
 from .wool import PARENT
 from . import javautils as ju
 
-from alpakka.templates import template_var
 from alpakka.logger import LOGGER
 
 from collections import OrderedDict
@@ -35,7 +34,6 @@ class JavaTyponder(JavaNodeWrapper):
             else:
                 LOGGER.warning("Unmatched type: %s", self.data_type)
 
-    @template_var
     def member_imports(self):
         """
         :return: Imports that are needed for this type if it is a member of a
