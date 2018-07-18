@@ -34,11 +34,6 @@ class JavaWool(Wool):
         # generate unions
         module.fill_template('union.jinja', module.unions())
         if not module.beans_only:
-            # generate empty xml_config template for NETCONF use
-            # module.fill_template('empty_config.jinja',
-            #                    {'empty_XML_config': module})
-            # run only if rpcs are available
-            # if module.rpcs:
             if_name = '%sInterface' % module.java_name
             rpc_imports = {imp for rpc in module.rpcs.values()
                            if hasattr(rpc, 'imports')

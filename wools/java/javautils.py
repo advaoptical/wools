@@ -22,7 +22,9 @@ JAVA_FORBIDDEN_ROOTS = {'rpc'}
 
 default_values = {
     'int': 0,
-    'boolean': 'false'
+    'boolean': 'false',
+    'double': '0.0',
+    'String': '""'
 }
 
 

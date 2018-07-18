@@ -4,6 +4,7 @@
 package {{ ctx.package() }};
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -49,7 +50,7 @@ public class {{ name }} implements Serializable {
 
   public static class Builder {
   {%- for key, var in ctx.vars.items() | sort(attribute='0') %}
-    private {{ var.java_type }} {{ key }};
+    private {{ var.java_type }} {{ key }}{% if var.is_build_in_type %} = {{ var.java_type | javadefault }}{% endif %};
   {%- endfor %}
 
     public Builder() {}
@@ -62,6 +63,12 @@ public class {{ name }} implements Serializable {
   {% endfor %}
 
     public {{ name }} build() {
+      {%- for key, var in ctx.vars.items() | sort(attribute='0') %}{% if not var.is_build_in_type %}
+      this.{{ key }} = this.{{ key }} != null ? this.{{ key }} :
+      {#- lists #}{% if var.group and var.group == 'list' %} Collections.emptyList()
+      {#- enumerations #} {% elif var.type and var.type.data_type == 'enumeration' %} {{var.java_type}}.values()[0]
+      {%- else %} new {{var.java_type}}.Builder().build() {%- endif %};
+      {%- endif %}{% endfor %}
       return new {{ name }}({%- for key in ctx.vars.keys() | sort %}{{ key }}{% if not loop.last %}, {% endif %}{%- endfor %});
     }
 

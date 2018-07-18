@@ -25,6 +25,23 @@ public class {{ name }} implements Serializable {
     return {{ varname }};
   }
 
+  public static class Builder {
+
+    private {{ type }} {{ varname }} = {{ type | javadefault }};
+
+    public Builder() {}
+
+    public Builder {{ varname }}({{ type }} {{ varname }}){
+      this.{{ varname }} = {{ varname }};
+      return this;
+    }
+
+    public {{ name }} build() {
+      return new {{ name }}({{varname}});
+    }
+
+  }
+
   @Override
   public int hashCode() {
 {%- if ctx.type.java_cast %}
