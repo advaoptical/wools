@@ -211,54 +211,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         # TODO: might need additional processing
         self.typedefs[typedef_name] = wrapped_description
 
-    def generate_classes(self):
-        """
-        organizes and orchestrate the class file generation
-
-        :return:
-        """
-        # generate enum classes
-        self.fill_template('enum_type.jinja', self.enums())
-        # generate class extensions
-        self.fill_template('class_extension.jinja', self.types())
-        # generate base class extensions
-        self.fill_template('class_type.jinja', self.base_extensions())
-        # generate classes
-        self.fill_template('grouping.jinja', self.classes)
-        # generate unions
-        self.fill_template('union.jinja', self.unions())
-        if not self.WOOL.beans_only:
-            # generate empty xml_config template for NETCONF use
-            # self.fill_template('empty_config.jinja',
-            #                    {'empty_XML_config': module})
-            # run only if rpcs are available
-            # if module.rpcs:
-            if_name = '%sInterface' % self.java_name
-            rpc_imports = {imp for rpc in self.rpcs.values()
-                           if hasattr(rpc, 'imports')
-                           for imp in rpc.imports()}
-            for root in self.get_root_elements().values():
-                for child in root.children.values():
-                    if hasattr(child, 'keys'):
-                        if self.yang_module().replace('-', '.') not in \
-                                child.java_imports.imports:
-                            rpc_imports.update(
-                                child.java_imports.get_imports())
-
-            rpc_dict = {'rpcs': self.rpcs,
-                        'imports': rpc_imports,
-                        'package': self.package(),
-                        'path': self.subpath(),
-                        'module': self}
-            self.fill_template('backend_interface.jinja',
-                               {if_name: rpc_dict})
-            rpc_dict['interface_name'] = if_name
-            self.fill_template('backend_impl.jinja',
-                               {'%sBackend' % self.java_name: rpc_dict})
-            self.fill_template('routes.jinja',
-                               {'%sRoutes' % self.java_name: rpc_dict})
-        self.generate_pom('pom.jinja', self)
-
     def fill_template(self, template_name, description_dict):
         """
         Fills the template with the descriptions given in the dictionary.
