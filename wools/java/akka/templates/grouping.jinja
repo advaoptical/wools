@@ -41,7 +41,7 @@ public class {{ name }} {% if ctx.uses|length == 1 %}extends {{ ctx.uses.keys() 
     {%- endfor %}){
     {%- if ctx.uses|length == 1 %}
     super({% for key in ctx.inherited_vars().keys() | sort %}{{ key }}{% if not loop.last %}, {% endif %}{% endfor %});{% endif -%}
-    {%- for key, var in ctx.vars.items() %}
+    {%- for key, var in ctx.vars.items() | sort(attribute='0') %}
     this.{{ key }} = {{ key }}
       {%- if 'list' in var.group %} != null ? ImmutableList.copyOf({{ key }}) : ImmutableList.of()
       {%- endif %};{% endfor %}
@@ -53,6 +53,26 @@ public class {{ name }} {% if ctx.uses|length == 1 %}extends {{ ctx.uses.keys() 
     return this.{{ key }};
   }
 {% endfor %}
+
+  public static class Builder {
+  {%- for key, var in ctx.vars.items() | sort(attribute='0') %}
+    private {{ var.java_type }} {{ key }};
+  {%- endfor %}
+
+    public Builder() {}
+
+  {% for key, var in ctx.vars.items() | sort(attribute='0') %}
+    public Builder {{ key | firstlower() }}({{ var.java_type }} {{ key }}){
+      this.{{ key }} = {{ key }};
+      return this;
+    }
+  {% endfor %}
+
+    public {{ name }} build() {
+      return new {{ name }}({%- for key in ctx.vars.keys() | sort %}{{ key }}{% if not loop.last %}, {% endif %}{%- endfor %});
+    }
+
+  }
 
   @Override
   public int hashCode() {
