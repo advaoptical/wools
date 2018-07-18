@@ -178,24 +178,17 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         # TODO: might need additional processing
         if class_name in self.classes.keys():
             LOGGER.debug("Class already in the list: %s", class_name)
-            if len(wrapped_description.children) != len(
-                    self.classes[class_name].children
-            ):
-                LOGGER.warning(
-                    "Number of children mismatch for %s between stored "
-                    "module %s and new module %s",
-                    class_name, self.classes[class_name].yang_name(),
-                    self.yang_name())
-            # print(self.classes[class_name].children.keys())
-            old = set(self.classes[class_name].children.keys())
-            new = set(wrapped_description.children.keys())
-            # print the different children
-            diff = old ^ new
+            diff = [key for key in
+                    wrapped_description.children.keys() ^ self.classes[
+                        class_name].children.keys()]
             if diff:
                 LOGGER.warning(
-                    "Child mismatch for class %s between module %s and %s: %s",
-                    class_name, self.classes[class_name].yang_name(),
-                    self.yang_name(), diff)
+                    "Children mismatch for %s between stored parent %s and"
+                    " new parent %s: %s", class_name,
+                    self.classes[class_name].parent.yang_name(),
+                    wrapped_description.parent.yang_name(),
+                    diff
+                )
         else:
             self.classes[class_name] = wrapped_description
 

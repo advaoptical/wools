@@ -16,14 +16,6 @@ class JavaGrouponder(JavaNodeWrapper):
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = ju.to_camelcase(java_name)
             self.vars[java_name] = item
-        # Java only supports single inheritance
-        # All inherited variables are removed for one uses
-        if len(self.uses) == 1:
-            for uses in self.uses.values():
-                for name in uses.children.keys():
-                    java_name = re.sub(r'^_', '', name)
-                    java_name = ju.to_camelcase(java_name)
-                    self.vars.pop(java_name)
         for item in list(self.uses.values()):
             self.uses[ju.java_class_name(item.yang_name())] = \
                 self.uses.pop(item.yang_name())
@@ -83,9 +75,9 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
                 self.vars[java_name] = ch_wrapper
                 self.top().add_class(self.java_type, self)
                 self.java_imports.add_import(self.package(), self.java_type)
+        elif len(self.uses) == 1 and len(self.vars) == 0:
             # containers that just import a grouping don't need a new class
             # -> variable
-        elif len(self.uses) == 1 and len(self.vars) == 0:
             class_item = next(iter(self.uses.values()))
             self.java_type = class_item.generate_java_type()
             self.java_imports = class_item.java_imports
@@ -120,29 +112,12 @@ class JavaList(JavaGrouponder, PARENT['list']):
         # TODO: einmalig genutzt, wirklich als globale variable
         self.java_imports.add_import(ju.JAVA_LIST_IMPORTS[0],
                                      ju.JAVA_LIST_IMPORTS[1])
-        # check if a super class exists and assign type
         if self.uses:
-            # multiple inheritance is not supported in Java:
-            # importing all variables
-            if len(self.uses) > 1:
-                for use in self.uses.values():
-                    for child in use.children.values():
-                        java_name = ju.to_camelcase(child.yang_name())
-                        self.vars[java_name] = child
-            # only one super class -> assign type
-            else:
-                self.type = next(iter(self.uses.values()))
-                self.java_imports.merge(self.type.java_imports)
-        # check for any other children not already in the variable list and
-        # add them
-        # FIXME: the 'if' might not work correctly
-        # for child_wr in self.children.values():
-        #     if child_wr not in self.vars.values():
-        #         child_wr.name = child_wr.statement.arg
-        #         java_name = to_camelcase(child_wr.statement.arg)
-        #         self.vars[java_name] = child_wr
-        # if new variables are defined in the list, a helper class is needed
-        # FIXME: the commented code (previous fixme) breaks this check
+            # add all variables from the uses to the vars
+            for use in self.uses.values():
+                for child in use.children.values():
+                    java_name = ju.to_camelcase(child.yang_name())
+                    self.vars[java_name] = child
         if self.children and 0 < len(self.vars):
             self.element_type = (self.generate_java_type() +
                                  ju.JAVA_LIST_CLASS_APPENDIX)
@@ -178,14 +153,6 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
                         var = JavaCase(case, self)
                         var.name = case.arg
                         self.vars[java_name] = var
-
-    def type(self):
-        # FIXME: needs fixing for more than one uses
-        if not self.vars:
-            if len(self.uses) == 1:
-                return next(self.uses.keys())
-        else:
-            return None
 
     def inheritance_imports(self):
         """
