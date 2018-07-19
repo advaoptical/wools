@@ -35,15 +35,15 @@ class JavaNodeWrapper:
         The pakackage name of this module.
         :return: the package name
         """
-        return ju.to_package(self.yang_module(), self.top().prefix)
+        return ju.to_package(self.yang_module(), self.WOOL.prefix)
 
     def subpath(self):
         """
         The subpath of this module.
         :return: the package name
         """
-        if self.top().prefix:
-            return '%s/%s' % (self.top().prefix.replace(".", "/"),
+        if self.WOOL.prefix:
+            return '%s/%s' % (self.WOOL.prefix.replace(".", "/"),
                               self.yang_module().lower().replace("-", "/"))
         else:
             return self.yang_module().lower().replace("-", "/")
@@ -90,7 +90,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.classes = OrderedDict()
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
-        self.prefix = self.WOOL.config['prefix']
         self.beans_only = self.WOOL.config.getboolean("beans-only")
         self.copyright = ""
         self.java_name = ju.java_class_name(statement.i_prefix)

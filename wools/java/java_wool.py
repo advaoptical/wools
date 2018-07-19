@@ -91,3 +91,4 @@ class JavaWool(Wool):
         self.copyright = re.sub('wool_config.ini',
                                 config['Wool']['copyright'],
                                 path)
+        self.prefix = self.config['prefix']
