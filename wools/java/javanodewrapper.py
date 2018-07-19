@@ -90,7 +90,6 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         self.classes = OrderedDict()
         self.rpcs = OrderedDict()
         self.typedefs = OrderedDict()
-        self.beans_only = self.WOOL.config.getboolean("beans-only")
         self.copyright = ""
         self.java_name = ju.java_class_name(statement.i_prefix)
 
@@ -254,7 +253,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
             f.write(output)
 
 
-class JavaBits(NodeWrapper):
+class JavaBits(NodeWrapper, yang='bits'):
     """
     Wrapper class for bits statement
     """

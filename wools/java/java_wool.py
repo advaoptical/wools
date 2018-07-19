@@ -33,7 +33,7 @@ class JavaWool(Wool):
         module.fill_template('grouping.jinja', module.classes)
         # generate unions
         module.fill_template('union.jinja', module.unions())
-        if not module.beans_only:
+        if not self.beans_only:
             if_name = '%sInterface' % module.java_name
             rpc_imports = {imp for rpc in module.rpcs.values()
                            if hasattr(rpc, 'imports')
@@ -91,4 +91,5 @@ class JavaWool(Wool):
         self.copyright = re.sub('wool_config.ini',
                                 config['Wool']['copyright'],
                                 path)
-        self.prefix = self.config['prefix']
+        self.prefix = self.config.get('prefix')
+        self.beans_only = self.config.getboolean("beans-only", False)
