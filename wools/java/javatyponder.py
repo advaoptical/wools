@@ -17,17 +17,20 @@ class JavaTyponder(JavaNodeWrapper):
         super(JavaTyponder, self).__init__(statement, parent)
         if self.data_type:
             if self.data_type == 'enumeration':
-                self.type = JavaEnumeration(statement.search_one('type'), self)
+                self.type = self.WOOL['enumeration'](
+                    statement.search_one('type'), self)
             elif self.data_type == 'union':
-                self.type = JavaUnion(statement.search_one('type'), self)
+                self.type = self.WOOL['union'](statement.search_one('type'), self)
             elif self.data_type == 'leafref':
                 if hasattr(self, 'reference'):
                     self.type = self.reference
                 else:
                     self.type = 'leafref'
             elif self.data_type == 'bits':
+                # TODO: should this be added to the WOOL? self.WOOL['bits']
                 self.type = JavaBits(statement, self)
             elif self.is_build_in_type:
+                # TODO: should this be added to the WOOL? self.WOOL['base']
                 self.type = JavaBaseType(self.data_type)
             elif not self.is_build_in_type:
                 self.type = self.top().derived_types[self.data_type]
