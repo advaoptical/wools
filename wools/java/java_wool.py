@@ -20,6 +20,7 @@ class JavaWool(Wool):
         self.beans_only = False
         self.copyright = None
         self.prefix = ""
+        self.iface_levels = 100
 
     def generate_output(self, module):
         """
@@ -53,7 +54,8 @@ class JavaWool(Wool):
                         'imports': rpc_imports,
                         'package': module.package(),
                         'path': module.subpath(),
-                        'module': module}
+                        'module': module,
+                        'levels': self.iface_levels}
             module.fill_template('backend_interface.jinja', {
                 if_name: rpc_dict})
             rpc_dict['interface_name'] = if_name
@@ -98,8 +100,11 @@ class JavaWool(Wool):
         config.read(path)
         ppath = Path(path).parent
         wool_config = config['Wool']
-        self.beans_only = wool_config.getboolean("beans-only", fallback=False)
+        self.beans_only = wool_config.getboolean("beans-only",
+                                                 fallback=self.beans_only)
         if config.has_option('Wool', 'copyright'):
             # TODO: needs to be fixed for absolute and general relative paths
             self.copyright = str(ppath.joinpath(wool_config['copyright']))
-        self.prefix = wool_config.get('prefix', fallback="")
+        self.iface_levels = wool_config.getint('interface-levels',
+                                               fallback=self.iface_levels)
+        self.prefix = wool_config.get('prefix', fallback=self.prefix)
