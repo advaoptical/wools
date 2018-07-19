@@ -1,6 +1,6 @@
+from pathlib import Path
 from alpakka import Wool
 import configparser
-import re
 
 TYPE_PATTERNS = {
     (r"u?int\d*", "int"),
@@ -16,6 +16,9 @@ class JavaWool(Wool):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, type_patterns=TYPE_PATTERNS)
+        self.beans_only = False
+        self.copyright = None
+        self.prefix = ""
 
     def generate_output(self, module):
         """
@@ -79,17 +82,18 @@ class JavaWool(Wool):
 
     def parse_config(self, path):
         """
-        organizes and orchestrate the wool specific option and configuration
-        handling
+        Loads the configuration from the given path and stores the values in
+        the wool.
 
-        :param path: the location of the config file
+        :param path: location of the config file
         :return:
         """
         config = configparser.ConfigParser()
         config.read(path)
-        self.config = config['Wool']
-        self.copyright = re.sub('wool_config.ini',
-                                config['Wool']['copyright'],
-                                path)
-        self.prefix = self.config.get('prefix')
-        self.beans_only = self.config.getboolean("beans-only", False)
+        ppath = Path(path).parent
+        wool_config = config['Wool']
+        self.beans_only = wool_config.getboolean("beans-only", fallback=False)
+        if config.has_option('Wool', 'copyright'):
+            # TODO: needs to be fixed for absolute and general relative paths
+            self.copyright = str(ppath.joinpath(wool_config['copyright']))
+        self.prefix = wool_config.get('prefix', fallback="")
