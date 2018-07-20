@@ -16,6 +16,7 @@ class JavaGrouponder(JavaNodeWrapper):
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = ju.to_camelcase(java_name)
             self.vars[java_name] = item
+        self.all_vars = dict(self.vars)
         for uses in self.uses.values():
             for name in uses.children.keys():
                 java_name = re.sub(r'^_', '', name)
@@ -50,10 +51,7 @@ class JavaGrouponder(JavaNodeWrapper):
         # imports from children
         for child in self.children.values():
             imports.merge(child.java_imports)
-        # imports from super classes
-        for inherit in self.uses.values():
-            imports.merge(inherit.inheritance_imports())
-        for var in self.vars.values():
+        for var in self.all_vars.values():
             # checking if there is at least one list defined in the grouponder
             if hasattr(var, 'group') and var.group == 'list':
                 imports.add_import(ju.JAVA_LIST_INSTANCE_IMPORTS[0],

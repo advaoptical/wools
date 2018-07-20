@@ -1,4 +1,8 @@
 {%- from 'fub.jinja' import class_description -%}
+{#- variable definitions -#}
+{%- set variables = ctx.all_vars -%}
+{%- set var_items = variables.items() | sort(attribute='0') -%}
+{%- set var_keys = variables.keys() | sort -%}
 
 {{ ctx.top().get_copy_right() }}
 package {{ ctx.package() }};
@@ -10,11 +14,11 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-{%- if ctx.uses or ctx.vars %}
+{%- if ctx.uses or variables %}
 import com.fasterxml.jackson.annotation.JsonProperty;
 {%- endif %}
 {% if ctx.imports() %}
-{% for import in ctx.imports()|sort -%}
+{% for import in ctx.imports() | sort -%}
 import {{ import }};
 {% endfor %}
 {%- endif %}
@@ -23,25 +27,25 @@ import {{ import }};
 public class {{ name }} implements Serializable {
 
   private static final long serialVersionUID = 1L;
-{% for key, var in ctx.vars.items() | sort(attribute='0') %}
+{% for key, var in var_items %}
 {{ class_description(var.description) | indent(2, True) }}
   private final {{ var.java_type }} {{ key }};
 {% endfor %}
 
   @JsonCreator
   public {{ name }} (
-    {% for key, var in ctx.vars.items() | sort(attribute='0') -%}
+    {% for key, var in var_items -%}
       @JsonProperty("{{ var.yang_name() }}") {{ var.java_type }} {{ key }}
     {%- if not loop.last -%},
     {% endif %}
     {%- endfor %}){
-    {%- for key, var in ctx.vars.items() | sort(attribute='0') %}
+    {%- for key, var in var_items %}
     this.{{ key }} = {{ key }}
       {%- if 'list' in var.group %} != null ? ImmutableList.copyOf({{ key }}) : ImmutableList.of()
       {%- endif %};{% endfor %}
   }
 
-{% for key, var in ctx.vars.items() %}
+{% for key, var in var_items %}
   @JsonProperty("{{ var.yang_name() }}")
   public {{ var.java_type }} get{{ key|firstupper() }}(){
     return this.{{ key }};
@@ -49,13 +53,13 @@ public class {{ name }} implements Serializable {
 {% endfor %}
 
   public static class Builder {
-  {%- for key, var in ctx.vars.items() | sort(attribute='0') %}
+  {%- for key, var in var_items %}
     private {{ var.java_type }} {{ key }}{% if var.is_build_in_type %} = {{ var.java_type | javadefault }}{% endif %};
   {%- endfor %}
 
     public Builder() {}
 
-  {% for key, var in ctx.vars.items() | sort(attribute='0') %}
+  {% for key, var in var_items %}
     public Builder {{ key | firstlower() }}({{ var.java_type }} {{ key }}){
       this.{{ key }} = {{ key }};
       return this;
@@ -63,13 +67,13 @@ public class {{ name }} implements Serializable {
   {% endfor %}
 
     public {{ name }} build() {
-      {%- for key, var in ctx.vars.items() | sort(attribute='0') %}{% if not var.is_build_in_type %}
+      {%- for key, var in var_items %}{% if not var.is_build_in_type %}
       this.{{ key }} = this.{{ key }} != null ? this.{{ key }} :
       {#- lists #}{% if var.group and var.group == 'list' %} Collections.emptyList()
       {#- enumerations #} {% elif var.type and var.type.data_type == 'enumeration' %} {{var.java_type}}.values()[0]
       {%- else %} new {{var.java_type}}.Builder().build() {%- endif %};
       {%- endif %}{% endfor %}
-      return new {{ name }}({%- for key in ctx.vars.keys() | sort %}{{ key }}{% if not loop.last %}, {% endif %}{%- endfor %});
+      return new {{ name }}({%- for key in var_keys %}{{ key }}{% if not loop.last %}, {% endif %}{%- endfor %});
     }
 
   }
@@ -77,8 +81,8 @@ public class {{ name }} implements Serializable {
   @Override
   public int hashCode() {
     return Objects.hash(
-      {%- if ctx.uses %}super.hashCode(){% if ctx.vars %}, {% endif %}{% endif %}
-      {%- for key in ctx.vars.keys() %}{{ key }}{% if not loop.last %}, {% endif %}
+      {%- if ctx.uses %}super.hashCode(){% if variables %}, {% endif %}{% endif %}
+      {%- for key in var_keys %}{{ key }}{% if not loop.last %}, {% endif %}
       {%- endfor %});
   }
 
@@ -90,14 +94,14 @@ public class {{ name }} implements Serializable {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    {%- if ctx.vars %}
+    {%- if variables %}
     {{ name }} that = ({{ name }}) o;
     {%- endif %}
-    {%- if ctx.uses or ctx.vars %}
+    {%- if ctx.uses or variables %}
     return
-      {%- if ctx.uses %} super.equals(o) {%- if ctx.vars %} &&
+      {%- if ctx.uses %} super.equals(o) {%- if variables %} &&
       {% endif %}{%- endif %}
-    {%- for key in ctx.vars.keys() %} Objects.equals(this.{{ key }}, that.{{ key }})
+    {%- for key in var_keys %} Objects.equals(this.{{ key }}, that.{{ key }})
       {%- if not loop.last %} &&
       {% endif %}
     {%- endfor %};
