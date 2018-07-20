@@ -64,6 +64,19 @@ def to_camelcase(string):
         return name
 
 
+def to_java_name(name):
+    """
+    Transforms the name into camel case and removes leading underscores.
+
+    :param name: the name to be processed
+    :return: valid Java camel case name
+
+    >>> to_java_name('_Java-name')
+    'javaName'
+    """
+    return to_camelcase(re.sub(r'^_', '', name))
+
+
 def to_package(string, prefix=None):
     """
     Converts the string to a package name by making it lower case,

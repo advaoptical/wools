@@ -13,14 +13,12 @@ class JavaGrouponder(JavaNodeWrapper):
         # all veriables defined by the grouponder without uses
         self.vars = OrderedDict()
         for item in self.children.values():
-            java_name = re.sub(r'^_', '', item.yang_name())
-            java_name = ju.to_camelcase(java_name)
+            java_name = ju.to_java_name(item.yang_name())
             self.vars[java_name] = item
         self.all_vars = dict(self.vars)
         for uses in self.uses.values():
             for name in uses.children.keys():
-                java_name = re.sub(r'^_', '', name)
-                java_name = ju.to_camelcase(java_name)
+                java_name = ju.to_java_name(name)
                 self.vars.pop(java_name)
         for item in list(self.uses.values()):
             self.uses[ju.java_class_name(item.yang_name())] = \
@@ -73,8 +71,7 @@ class JavaContainer(JavaGrouponder, PARENT['container']):
                 # store the yang name
                 ch_wrapper.name = ch_wrapper.yang_name()
                 # remove leading underscores from the name
-                java_name = re.sub(r'^_', '', ch_wrapper.name)
-                java_name = ju.to_camelcase(java_name)
+                java_name = ju.to_java_name(ch_wrapper.name)
                 self.vars[java_name] = ch_wrapper
                 self.top().add_class(self.java_type, self)
                 self.java_imports.add_import(self.package(), self.java_type)
@@ -157,8 +154,7 @@ class JavaGrouping(JavaGrouponder, PARENT['grouping']):
             if sub_st.keyword == 'choice':
                 for case in sub_st.substmts:
                     if case.keyword == 'case':
-                        java_name = ju.to_camelcase(re.sub(r'^_', '',
-                                                           case.arg))
+                        java_name = ju.to_java_name(case.arg)
                         var = JavaCase(case, self)
                         var.name = case.arg
                         self.vars[java_name] = var
