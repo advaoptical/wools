@@ -10,12 +10,17 @@ class JavaGrouponder(JavaNodeWrapper):
 
     def __init__(self, *args):
         super(JavaGrouponder, self).__init__(*args)
-        # find all available variables in the sub-statements
+        # all veriables defined by the grouponder without uses
         self.vars = OrderedDict()
         for item in self.children.values():
             java_name = re.sub(r'^_', '', item.yang_name())
             java_name = ju.to_camelcase(java_name)
             self.vars[java_name] = item
+        for uses in self.uses.values():
+            for name in uses.children.keys():
+                java_name = re.sub(r'^_', '', name)
+                java_name = ju.to_camelcase(java_name)
+                self.vars.pop(java_name)
         for item in list(self.uses.values()):
             self.uses[ju.java_class_name(item.yang_name())] = \
                 self.uses.pop(item.yang_name())
@@ -109,18 +114,24 @@ class JavaList(JavaGrouponder, PARENT['list']):
         super(JavaList, self).__init__(statement, parent)
         self.group = 'list'
         self.java_imports = ju.ImportDict()
-        # TODO: einmalig genutzt, wirklich als globale variable
+        # TODO: only used once. Should they be global variables?
         self.java_imports.add_import(ju.JAVA_LIST_IMPORTS[0],
                                      ju.JAVA_LIST_IMPORTS[1])
         if self.uses:
             # add all variables from the uses to the vars
-            for use in self.uses.values():
-                for child in use.children.values():
-                    java_name = ju.to_camelcase(child.yang_name())
-                    self.vars[java_name] = child
+            if len(self.uses) > 1:
+                # TODO: should all variables be copied to vars?
+                for use in self.uses.values():
+                    for child in use.children.values():
+                        java_name = ju.to_camelcase(child.yang_name())
+                        self.vars[java_name] = child
+            else:
+                # only one super class -> assign type
+                self.type = next(iter(self.uses.values()))
+                self.java_imports.merge(self.type.java_imports)
         if self.children and 0 < len(self.vars):
-            self.element_type = (self.generate_java_type() +
-                                 ju.JAVA_LIST_CLASS_APPENDIX)
+            self.element_type = self.generate_java_type(
+                ju.JAVA_LIST_CLASS_APPENDIX)
             self.top().add_class(self.element_type, self)
             self.java_type = 'List<%s>' % self.element_type
             self.java_imports.add_import(self.package(), self.element_type)

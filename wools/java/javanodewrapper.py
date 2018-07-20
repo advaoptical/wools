@@ -60,12 +60,12 @@ class JavaNodeWrapper:
             result += getattr(self, 'keys', ())
         return result
 
-    def generate_java_type(self):
+    def generate_java_type(self, appendix=""):
 
         if self.is_augmented:
-            java_type = self.generate_java_key()
+            java_type = self.generate_java_key() + appendix
         else:
-            java_type = ju.java_class_name(self.yang_name())
+            java_type = ju.java_class_name(self.yang_name()) + appendix
             if java_type in self.top().classes.keys():
                 twin = self.top().classes[java_type]
                 if self.yang_type() != twin.yang_type():
@@ -176,9 +176,7 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
         # TODO: might need additional processing
         if class_name in self.classes.keys():
             LOGGER.debug("Class already in the list: %s", class_name)
-            diff = [key for key in
-                    wrapped_description.children.keys() ^ self.classes[
-                        class_name].children.keys()]
+            diff = self.class_difference(class_name, wrapped_description)
             if diff:
                 LOGGER.warning(
                     "Children mismatch for %s between stored parent %s and"
@@ -189,6 +187,29 @@ class JavaModule(JavaNodeWrapper, PARENT['module']):
                 )
         else:
             self.classes[class_name] = wrapped_description
+
+    def class_difference(self, class_name, wrapped_description):
+        """
+        Compares the children of an existing class to the given wrapped
+        description and returns the names that are different.
+
+        :param class_name: the name of the class
+        :param wrapped_description: the wrapped description of the class
+        :return: list of attribute names that are different
+        """
+        if self.exists_class(class_name):
+            return [key for key in
+                    wrapped_description.children.keys() ^
+                    self.classes[class_name].children.keys()]
+        return []
+
+    def exists_class(self, class_name):
+        """
+        Checks if the class name already exists.
+        :param class_name: the name to be checked
+        :return: does it already exist?
+        """
+        return class_name in self.classes.keys()
 
     def add_rpc(self, rpc_name, wrapped_description):
         """

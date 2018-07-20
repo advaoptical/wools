@@ -1,5 +1,6 @@
 from pathlib import Path
 from alpakka import Wool
+from alpakka.logger import LOGGER
 import configparser
 
 TYPE_PATTERNS = {
@@ -72,13 +73,18 @@ class JavaWool(Wool):
         :return:
         """
         for name, child in set(module.classes.items()):
-            original_module = child.statement.i_orig_module.arg
-            if original_module != module.yang_module():
-                if name in wrapped_modules[original_module].classes:
-                    module.classes.pop(name)
+            orig_mod_name = child.statement.i_orig_module.arg
+            if orig_mod_name != module.yang_module():
+                orig_mod = wrapped_modules[orig_mod_name]
+                if name in orig_mod.classes:
+                    diff = orig_mod.class_difference(name, child)
+                    if diff:
+                        LOGGER.warn(
+                            "Different attributes detected when merging "
+                            "%s: %s", name, diff)
                 else:
-                    wrapped_modules[original_module].classes[name] = child
-                    module.classes.pop(name)
+                    orig_mod.classes[name] = child
+                module.classes.pop(name)
 
     def parse_config(self, path):
         """
