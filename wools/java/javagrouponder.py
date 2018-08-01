@@ -3,7 +3,6 @@ from . import javautils as ju
 from .wool import PARENT
 
 from collections import OrderedDict
-import re
 
 
 class JavaGrouponder(JavaNodeWrapper):

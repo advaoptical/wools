@@ -130,6 +130,6 @@ This section gives a short overview of all steps which need to be performed to i
 
 * implement a wool class that covers all the mandatory methods (parse_config, wrapping_postprocessing, and generate_output)
 
-* create the __init__.py and register the wool
+* create the `__init__.py` and register the wool
 
 * implement the required classes for the wool specific data transformation
