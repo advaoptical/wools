@@ -18,7 +18,7 @@ setup(
 
     packages=find_packages(include=['wools', 'wools.*']),
 
-    package_data={'wools.*': ['*.jinja']},
+    package_data={'': ['*.jinja']},
 
     entry_points={'alpakka_wools': [
         'Java=wools.java',
