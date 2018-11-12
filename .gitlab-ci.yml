@@ -1,4 +1,6 @@
 coala:
   image: coala/base
+  tags:
+    - docker
   script:
     - coala --ci
