@@ -14,7 +14,7 @@ setup(
     setup_requires=open('requirements.setup.txt'),
     install_requires=['alpakka', 'jinja2'],
 
-    use_scm_version={'local_scheme': lambda _: ''},
+    use_scm_version={'local_scheme': 'dirty-tag'},
 
     packages=find_packages(include=['wools', 'wools.*']),
 
